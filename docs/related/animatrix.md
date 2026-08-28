@@ -19,9 +19,9 @@
 
 ## 2. Strategic read for us
 
-**What it changes.** This is prior art for the framing, at industrial scale, published before our submission window — we cite it as motivation and position *against* it, not parallel to it. "We also noticed anime breaks physics" is no longer a contribution.
+**What it changes: nothing in our framing.** (Decided 2026-08-28.) AniMatrix is a non-peer-reviewed technical report with nothing public except the PDF — no model, data, or benchmark. Two groups independently converging on the same thesis is ordinary science and *strengthens* our motivation: the realism trap / artistic-correctness framing remains ours to state in our own terms, with AniMatrix cited as concurrent industrial work that corroborates it at deployment scale. We do not write defensively around it.
 
-**What it leaves open — our lanes:**
+**Where the work is complementary — our lanes:**
 
 1. **The objective level is untouched.** AniMatrix attacks artistic correctness through *data + conditioning + curriculum + preference alignment* around a **standard FM velocity loss**. Native FM attacks it through the **objective itself** (motion-aware frame weighting, latent temporal-delta consistency, keyframe anchoring). Nothing in their recipe conflicts with ours; nothing in theirs subsumes ours. Better: their gap (2) — the surviving *uniform-motion prior* damping non-uniform anime rhythm — is precisely what per-frame motion weighting and delta consistency target, without new conditioning axes, annotation systems, or 64×H800. Our pitch: *artistic correctness for the GPU-poor, at the objective level* — quote their own limitation as the problem statement.
 2. **Automated evaluation is an explicitly open problem.** They rely on 15 professional annotators and state: "Developing automated metrics that align with professional anime quality judgments remains an important direction for future work." Our CFS/TCS/WorstSegment/DFS suite — *validated against a small human study using their 5-dimension protocol* — directly answers that call. Their observed FVD anti-correlation is a cheap, high-value experiment to reproduce and quantify.
@@ -67,7 +67,7 @@
 3. **C3 — Low-resource data recipe** (#1–#5): shot-split + taxonomy-mapped VLM directives + rebalancing on a fully reproducible public-source corpus; quantify each step's contribution.
 4. **Stretch — C4**: GT-anchored DPO (#8) and/or tag-conditioning lite (#9).
 
-The honest one-line positioning: *AniMatrix proves artistic correctness is trainable with industrial data and compute; we show how far the objective, the evaluation, and a reproducible low-resource recipe get you without either — and release everything.*
+The one-line positioning: *Two groups independently arrived at artistic correctness as the target; AniMatrix demonstrates it with industrial data and compute behind closed doors — we establish it in the open, through the objective, a validated evaluation, and a fully reproducible recipe.*
 
 ## 5. Watch items
 
