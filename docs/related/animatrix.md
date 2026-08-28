@@ -74,3 +74,19 @@ The one-line positioning: *Two groups independently arrived at artistic correctn
 - Their promised resource release (benchmark would change C2's landscape; weights would give us a stronger baseline to compare against). Check arXiv/HF/GitHub monthly.
 - AniMatrix-Uni (announced): multimodal conditioning, motion-rhythm axis, test-time planning. If it lands before November with a rhythm-conditioning mechanism, sharpen C1's distinction (objective vs conditioning).
 - Seedance 2.0 / Wan 2.5 anime capability (mentioned as unreleased/unreported at their time of writing).
+
+## 6. Data scaling: matching their acquisition posture at our scale (2026-08-28)
+
+**Posture (user-decided):** identical to theirs — train on publicly available anime media, redistribute nothing. Sakugabooru is a public clip-sharing forum; acquisition for research carries no meaningful scrutiny. The one cautionary precedent, [Sakuga-42M](https://arxiv.org/abs/2405.07425v1) (U. Alberta, 2024, withdrawn), failed on *redistribution of media*, not scraping — our release policy (post IDs + metadata + scripts, never clips) stays on the surviving side of that line.
+
+**Ground truth about our holdings (verified on disk):** 11,781 clips / 156 GB — and nothing else anywhere on the filesystem (no pair-dataset output, no second cache). The April scrape was *interrupted mid-sweep* (`scrape.log` ends at `[3436/5000]` of the smears sweep); we hold ~4% of the booru. The "3.6M pairs" figure from the course era was a windowing *projection over* these clips, not additional data.
+
+**Acquisition plan (in flight):**
+
+1. **Bulk via mirror:** [`trojblue/sakugabooru2025`](https://huggingface.co/datasets/trojblue/sakugabooru2025) on HF is a full media mirror — 155,238 video clips + 240,242 metadata JSONs, 1.27 TB, WebDataset tars, complete coverage post ID 0 → 2024-12-28 (163,918 of 273,264 post IDs have media; rest are DMCA'd/dupes). Downloading from the HF CDN is ~50× faster than polite scraping and puts zero load on the community site. Download launched 2026-08-28 into `data/sakugabooru/snapshot-2025/` (nohup, resumable via `snapshot_download`).
+2. **Delta via our scraper, zero code changes:** the booru API is currently open without Cloudflare cookies; moebooru `id:A..B` range tags work; the scraper passes `--anime` values through as raw query tags and sorts output by the *post's* series tags. Validated dry-run: `tools/scrape_sakugabooru.py --anime "id:<cutoff>..<latest>" --limit 999999 --min-score 0`. Latest post ID at check time: 314,459; snapshot cutoff ≈ 273k → delta ≈ 41k posts ≈ ~25k clips with media.
+3. **Merge:** extract snapshot tars into the `clips/<series>/{post_id}_s{score}.mp4 + {post_id}.json` layout (series derived from tags, as the scraper does), dedupe by post ID against existing holdings, then run the Tier-1 pipeline (shot split → curation cascade → VLM annotation → rebalancing) over the merged corpus.
+
+**Resulting corpus estimate:** ~180k clips ≈ 1.6–1.8 TB — a ~15× expansion that lands at the *useful ceiling*: LoRA-scale training on this cluster can consume roughly 100–250k curated clips before the CVPR deadline, so their remaining 149M-clip scale would be wasted on us. Signal-density note: Sakugabooru is community-curated craft, i.e., we start near where their curation cascade *ends* (their 150M → 1M A-tier is a 0.7% survival rate).
+
+**Storage:** 47 TB free on the share, no quota barrier observed.
