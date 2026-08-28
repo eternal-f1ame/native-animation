@@ -3,12 +3,12 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$REPO_ROOT"
+source "$REPO_ROOT/configs/paths.env"
 
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-DATA_ROOT=${DATA_ROOT:-${REPO_ROOT}/../Anime/sakugabooru_clips}
-METADATA_PATH=${METADATA_PATH:-data/metadata/metadata_train.csv}
-OUTPUT_PATH=${OUTPUT_PATH:-artifacts/checkpoints/native_animation_flowmatch_lora}
+METADATA_PATH=${METADATA_PATH:-$METADATA_DIR/metadata_train.csv}
+OUTPUT_PATH=${OUTPUT_PATH:-$EXPERIMENTS_ROOT/checkpoints/native_animation_flowmatch_lora}
 HEIGHT=${HEIGHT:-480}
 WIDTH=${WIDTH:-832}
 NUM_FRAMES=${NUM_FRAMES:-49}

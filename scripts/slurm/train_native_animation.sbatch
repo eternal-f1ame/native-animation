@@ -8,24 +8,24 @@
 #SBATCH --time=1-00:00:00
 #SBATCH --constraint=gmem48|gmem80
 #SBATCH --export=ALL
-#SBATCH --output=artifacts/logs/%x-%j.out
-#SBATCH --error=artifacts/logs/%x-%j.err
+#SBATCH --output=experiments/logs/%x-%j.out
+#SBATCH --error=experiments/logs/%x-%j.err
 
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$REPO_ROOT"
+source "$REPO_ROOT/configs/paths.env"
 
-mkdir -p artifacts/logs artifacts/checkpoints data/metadata
+mkdir -p "$EXPERIMENTS_ROOT/logs" "$EXPERIMENTS_ROOT/checkpoints"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
 echo "PYTHON=$(which python)"
 python -V
 
-export DATA_ROOT=${DATA_ROOT:-${REPO_ROOT}/../Anime/sakugabooru_clips}
-export METADATA_PATH=${METADATA_PATH:-data/metadata/metadata_train.csv}
-export OUTPUT_PATH=${OUTPUT_PATH:-artifacts/checkpoints/native_animation_flowmatch_lora}
+export METADATA_PATH=${METADATA_PATH:-$METADATA_DIR/metadata_train.csv}
+export OUTPUT_PATH=${OUTPUT_PATH:-$EXPERIMENTS_ROOT/checkpoints/native_animation_flowmatch_lora}
 export HEIGHT=${HEIGHT:-480}
 export WIDTH=${WIDTH:-832}
 export NUM_FRAMES=${NUM_FRAMES:-49}

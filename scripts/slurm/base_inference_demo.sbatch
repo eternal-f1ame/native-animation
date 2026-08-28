@@ -8,17 +8,17 @@
 #SBATCH --time=1-00:00:00
 #SBATCH --constraint=gmem48|gmem80
 #SBATCH --export=ALL
-#SBATCH --output=artifacts/logs/%x-%j.out
-#SBATCH --error=artifacts/logs/%x-%j.err
+#SBATCH --output=experiments/logs/%x-%j.out
+#SBATCH --error=experiments/logs/%x-%j.err
 
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$REPO_ROOT"
+source "$REPO_ROOT/configs/paths.env"
 
-mkdir -p artifacts/logs artifacts/base_demo
+mkdir -p "$EXPERIMENTS_ROOT/logs" "$EXPERIMENTS_ROOT/demo/base"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
-export DATA_ROOT=${DATA_ROOT:-${REPO_ROOT}/../Anime/sakugabooru_clips}
 
 echo "HOSTNAME=$(hostname)"
 echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
@@ -27,9 +27,9 @@ python -V
 nvidia-smi
 
 python -m native_animation.inference.run_baseline \
-  --input-csv data/metadata/metadata_test.csv \
+  --input-csv "$METADATA_DIR/metadata_test.csv" \
   --dataset-base-path "$DATA_ROOT" \
-  --output-dir artifacts/base_demo \
+  --output-dir "$EXPERIMENTS_ROOT/demo/base" \
   --limit 2 \
   --unique-series \
   --height 480 \

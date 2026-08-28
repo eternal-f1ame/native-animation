@@ -7,15 +7,16 @@
 #SBATCH --mem=16G
 #SBATCH --time=1-00:00:00
 #SBATCH --export=ALL
-#SBATCH --output=artifacts/logs/%x-%j.out
-#SBATCH --error=artifacts/logs/%x-%j.err
+#SBATCH --output=experiments/logs/%x-%j.out
+#SBATCH --error=experiments/logs/%x-%j.err
 
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$REPO_ROOT"
+source "$REPO_ROOT/configs/paths.env"
 
-mkdir -p artifacts/logs
+mkdir -p "$EXPERIMENTS_ROOT/logs"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "HOSTNAME=$(hostname)"

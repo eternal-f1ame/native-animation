@@ -9,12 +9,17 @@ venv/
 .mypy_cache/
 .ipynb_checkpoints/
 
-/artifacts/
 /data/
 /dist/
 /cache/
 .cache/
 wandb/
+
+/models
+/experiments/*
+!/experiments/logs/
+/experiments/logs/*
+!/experiments/logs/.gitkeep
 
 *.ckpt
 *.pt
@@ -23,8 +28,8 @@ wandb/
 *.bin
 
 # LaTeX build artifacts
-Final_Project_Report/main.aux
-Final_Project_Report/main.bbl
-Final_Project_Report/main.blg
-Final_Project_Report/main.log
-Final_Project_Report/main.out
+paper/main.aux
+paper/main.bbl
+paper/main.blg
+paper/main.log
+paper/main.out
