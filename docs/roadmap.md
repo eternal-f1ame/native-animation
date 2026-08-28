@@ -1,6 +1,7 @@
 # Research Roadmap — CVPR 2027
 
 Status: skeleton. Content to be filled in a dedicated planning session.
+Positioning and adoption plan relative to Tencent AniMatrix (arXiv:2605.03652): see `related/animatrix.md`.
 All experiments run afresh — no prior numbers carry over (predecessor report archived).
 Target: CVPR 2027 submission (~mid-November 2026).
 
