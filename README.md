@@ -1,117 +1,75 @@
-# Dynamic Panel Animation
+# Native Animation
 
-Standalone repository for keyframe-conditioned native-animation video generation.
+Keyframe-conditioned native-animation video generation with Flow Matching.
 
-This repository is the submission-facing version of the project. It keeps the code that the team actually built for the native-animation task, plus the minimum vendored DiffSynth runtime needed to run it.
+Given a single anime keyframe, the model generates a short continuation that preserves the frame's artistic style while producing the stylized, physics-violating motion — smears, impact frames, morphing — that defines high-quality 2D animation. Off-the-shelf video models inherit a photorealism prior from web-scale training data and reliably erase this motion (the *realism trap*); this project attacks that failure directly. See `paper/` for the current write-up.
 
-## Project Goal
+## Method
 
-The goal is to generate short native-animation continuations from a single keyframe.
+Native Animation Flow Matching (Native FM) extends a Wan2.2-TI2V Flow Matching backbone with three coordinated changes, all in `src/native_animation/modeling/native_flowmatch.py`. The architecture is untouched; the contribution is the objective and the noise schedule:
 
-Concretely, the project focuses on:
+1. **Keyframe-preserving scheduler shift** — `NativeAnimationFlowMatchScheduler` defaults to `shift=3.0` (vs. Wan's ~5), so early timesteps stay closer to the clean signal and the conditioning keyframe survives noising.
+2. **Motion-aware frame weighting** — per-frame loss weights derived from latent frame-to-frame deltas concentrate capacity on motion beats rather than the long static stretches that dominate sakuga clips.
+3. **Latent temporal-difference consistency** — the predicted clean sequence's frame deltas are regressed onto the ground-truth deltas, penalizing flicker and mid-clip collapse that velocity-only losses ignore.
 
-- using the first frame of a clip as the conditioning keyframe
-- fine-tuning a Wan-based Flow Matching video model on Sakugabooru clips
-- comparing baseline generations against a project-owned native-animation Flow Matching variant
-- evaluating results with a repeatable headless scoring workflow
+The keyframe latents are clamped clean during noising and excluded from the loss so the anchor stays pinned. Details: `docs/method.md`.
 
-## Method Overview
+## Evaluation
 
-The project-owned method extends Wan's Flow Matching backbone with three small but targeted changes, all implemented in `src/native_animation/modeling/native_flowmatch.py`:
+`src/native_animation/evaluation/evaluate.py` scores generations against held-out clips on four axes — CFS (continuation fidelity), TCS (temporal consistency), WorstSegment, and DFS (diffusion-failure score) — aggregated as `FinalScore = 0.4·CFS + 0.25·TCS + 0.2·WorstSeg − 0.5·DFS`.
 
-1. **Keyframe-preserving scheduler shift.** The custom `NativeAnimationFlowMatchScheduler` defaults to `shift=3.0` (vs. Wan's heavier default), so early timesteps stay closer to the clean signal and the conditioning keyframe survives noising.
-2. **Motion-aware frame weighting.** During training, per-frame loss weights are derived from the magnitude of frame-to-frame latent differences. Active frames carry more weight than long static stretches, which dominate the Sakuga clip distribution.
-3. **Latent temporal-difference consistency.** On top of the standard velocity loss, the predicted clean sequence is regressed onto the ground-truth frame-to-frame latent deltas. This penalizes flicker and mid-clip collapse that velocity-only loss tends to ignore.
+## Dataset
 
-The keyframe latents are clamped clean during noising and excluded from the loss so the anchor stays pinned, and the evaluator (`src/native_animation/evaluation/evaluate.py`) summarizes generations with four CLIP+flow-derived metrics (CFS, TCS, WorstSegment, DFS). See `docs/method.md` for the longer write-up.
+A curated Sakugabooru corpus (~11.9k clips, 240+ series, 25 technique tags). The scraping and windowing pipeline lives in `tools/`; layout and stats in `docs/dataset.md`. Raw data is not versioned — it lives at `<workspace>/data/sakugabooru/`.
 
-## Team Contributions
+## Repository layout
 
-The main team-owned work in this repository lives under `src/native_animation/`.
+| Path | Contents |
+|---|---|
+| `src/native_animation/` | Project-owned code: `data/`, `modeling/`, `training/`, `inference/`, `evaluation/` |
+| `src/diffsynth/` | Vendored DiffSynth runtime subset (not the contribution — see `THIRD_PARTY.md`) |
+| `tools/` | Sakugabooru scraper and keyframe-pair dataset builder |
+| `configs/paths.env` | Single source of truth for machine paths |
+| `scripts/`, `scripts/slurm/` | Cluster entrypoints |
+| `tests/` | CPU-only unit tests (`pytest`) |
+| `paper/` | The paper (LaTeX) |
+| `docs/` | Method notes, dataset notes, research roadmap |
+| `experiments/` | Run outputs (gitignored) |
 
-The contribution includes:
-
-- dataset collection and curation
-  - sourcing native-animation clips from Sakugabooru for the project dataset
-  - filtering, organizing, and maintaining the raw clip collection outside version control
-- `src/native_animation/data/`
-  - dataset metadata construction from the collected Sakugabooru clip set
-  - sample selection and keyframe extraction utilities
-- `src/native_animation/modeling/native_flowmatch.py`
-  - a custom native-animation Flow Matching scheduler and loss
-  - motion-aware frame weighting
-  - latent temporal-difference consistency regularization
-- `src/native_animation/training/train.py`
-  - a focused fine-tuning entrypoint that plugs the custom method into DiffSynth
-- `src/native_animation/inference/run_baseline.py`
-  - baseline Wan inference on held-out clips for comparison
-- `src/native_animation/inference/generate.py`
-  - inference for the trained native-animation variant
-- `src/native_animation/evaluation/evaluate.py`
-  - a headless evaluator adapted from the shared prototype
-  - CLIP-based fidelity scoring plus temporal and collapse-sensitive metrics
-- `scripts/slurm/`
-  - cluster-ready job templates for metadata build, smoke test, baseline inference, and training
-
-## Repository Layout
-
-- `src/native_animation/`
-  - project-owned code, documented inline with succinct comments that explain the non-obvious decisions (scheduler shift, motion weighting, delta-consistency loss, anchor-frame handling, evaluation metrics)
-  - `data/` metadata building, sampling, and keyframe extraction
-  - `modeling/` custom Flow Matching scheduler and loss
-  - `training/` fine-tuning entrypoint
-  - `inference/` baseline and trained-model generation entrypoints
-  - `evaluation/` headless video evaluation utilities
-- `src/diffsynth/`
-  - vendored DiffSynth runtime subset required by the project code
-  - included for execution, but not the main project contribution
-- `scripts/`
-  - reusable shell and SLURM entrypoints
-- `docs/`
-  - method notes and provenance
-
-## Typical Workflow
-
-1. Build metadata CSVs from the raw clip collection.
-2. Run a small baseline inference pass on held-out clips.
-3. Fine-tune the native-animation Flow Matching variant.
-4. Generate videos from selected keyframes.
-5. Evaluate baseline and trained outputs with the headless scorer.
-
-## Quick Start
-
-Install the package in editable mode:
+## Workflow
 
 ```bash
-pip install -e .
+# 0. one-time: paths (defaults assume the standard workspace layout; override via env)
+source configs/paths.env
+
+# 1. build metadata CSVs from the raw clips
+sbatch scripts/slurm/build_metadata.sbatch
+
+# 2. GPU-node environment check
+sbatch scripts/slurm/env_smoke_test.sbatch
+
+# 3. untuned-baseline generations on held-out clips
+sbatch scripts/slurm/base_inference_demo.sbatch
+
+# 4. fine-tune Native FM (hyperparameters override via env, e.g. NUM_FRAMES=81)
+sbatch scripts/slurm/train_native_animation.sbatch
+
+# 5. generate from one keyframe with a trained LoRA
+python -m native_animation.inference.generate \
+  --input-image keyframe.png --prompt "native animation, anime, ..." \
+  --lora-path experiments/checkpoints/native_animation_flowmatch_lora/... --output out.mp4
+
+# 6. evaluate
+python -m native_animation.evaluation.evaluate \
+  --summary-json experiments/demo/base/summary.json --dataset-base-path "$DATA_ROOT"
 ```
 
-Available console entrypoints:
+## Testing
 
-- `native-animation-build-metadata`
-- `native-animation-extract-keyframes`
-- `native-animation-run-baseline`
-- `native-animation-generate`
-- `native-animation-train`
-- `native-animation-evaluate`
+```bash
+python -m pytest
+```
 
-SLURM templates live in `scripts/slurm/`.
+## License
 
-For the method details, see `docs/method.md`.
-
-## What Is Not Bundled
-
-This repository does not ship:
-
-- model weights or caches
-- raw datasets
-- generated outputs
-- checkpoints
-
-Those artifacts are environment-specific and should stay outside version control.
-
-## Third-Party Boundary
-
-The `src/diffsynth/` directory is a vendored runtime subset carved out of the larger DiffSynth tree. It is included so the standalone repository remains runnable, but it should not be confused with the team's project-owned method layer in `src/native_animation/`.
-
-See `THIRD_PARTY.md` for provenance notes.
+Apache-2.0. `src/diffsynth/` provenance in `THIRD_PARTY.md`.

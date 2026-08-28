@@ -1,6 +1,6 @@
 # Method
 
-This document describes the technical method behind Native Animation Flow Matching (Native FM). For background and motivation, see the project [report](../Final_Project_Report/main.tex).
+This document describes the technical method behind Native Animation Flow Matching (Native FM). For background and motivation, see the project [report](../paper/main.tex).
 
 ## Problem statement
 
@@ -137,7 +137,7 @@ docs/          # this file
 
 ## References
 
-The core ideas are documented in the project report at `Final_Project_Report/main.tex` with a complete bibliography. The most directly relevant prior work is:
+The core ideas are documented in the project report at `paper/main.tex` with a complete bibliography. The most directly relevant prior work is:
 
 - Lipman et al., "Flow Matching for Generative Modeling," ICLR 2023.
 - Liu et al., "Flow Straight and Fast: Rectified Flow," ICLR 2023.

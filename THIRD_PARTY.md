@@ -1,12 +1,7 @@
 # Third-Party Components
 
-This repository contains a vendored subset of DiffSynth under `src/diffsynth/`.
+`src/diffsynth/` is a vendored subset of DiffSynth-Studio (Apache-2.0), carried in-repo so the project runs from a single clone.
 
-Provenance:
+Provenance: the subset was carved from the project's former DiffSynth working fork — frozen at `<workspace>/third_party/DiffSynth-fork` — and migrated into this repository in August 2026. Upstream: https://github.com/modelscope/DiffSynth-Studio.
 
-- source tree: `DiffSynth`
-- export path: `course_project/native_animation_submission/export_submission_bundle.py`
-
-The vendored runtime is included so the standalone repository remains runnable without the rest of the upstream monorepo.
-
-Keep the root `LICENSE` file with the vendored code when publishing this repository.
+When the method needs deeper runtime access, copy the required modules from the frozen fork (or current upstream) into `src/diffsynth/` and note the addition here. Keep the root `LICENSE` file with the vendored code when publishing.
