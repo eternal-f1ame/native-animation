@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`native-animation` — keyframe-conditioned native-animation video generation with Flow Matching (Native FM), targeting CVPR 2027. A Wan2.2-TI2V-5B backbone is fine-tuned with a project-owned objective; the entire method contribution is `src/native_animation/modeling/native_flowmatch.py` (~170 lines): keyframe-preserving scheduler shift (3.0), anchor-frame clamping (frame 0 clamped clean and excluded from the loss — the clamp IS its supervision), motion-aware frame weighting (`w = 1 + α·normalized latent delta`), and a latent temporal-difference consistency term (`λ=0.25`). `docs/method.md` is the long-form write-up; `paper/` is the paper.
+`native-animation` — keyframe-conditioned native-animation video generation with Flow Matching (Native FM), targeting CVPR 2027. A Wan2.2-TI2V-5B backbone is fine-tuned with a project-owned objective; the entire method contribution is `src/native_animation/modeling/native_flowmatch.py` (~170 lines): keyframe-preserving scheduler shift (3.0), anchor-frame clamping (frame 0 clamped clean and excluded from the loss — the clamp IS its supervision), motion-aware frame weighting (`w = 1 + α·normalized latent delta`), and a latent temporal-difference consistency term (`λ=0.25`). `docs/method.md` is the long-form write-up; `paper/` will hold the CVPR 2027 manuscript — all experiments are being redone fresh, no prior numbers carry over.
 
 This repo expects the standard workspace around it: `../data/sakugabooru/{clips,metadata}`, `../models` (weight cache, reached via the repo's `models` symlink), `../third_party` (frozen DiffSynth fork + reference clones). `configs/paths.env` is the single source of truth for these paths — source it; never hardcode.
 
@@ -47,4 +47,4 @@ tail -n 120 experiments/logs/<jobname>-<id>.{out,err}
 
 ## Method invariants the tests pin
 
-`α=0` recovers unweighted MSE exactly (`_weighted_mse` normalizer); anchor frames are sliced out of every loss tensor (`[:, :, anchor_frames:]`); shift-3 Wan sigmas follow `3σ/(1+2σ)`. If you change `native_flowmatch.py` semantics, update `docs/method.md` and `paper/` — they quote these numbers.
+`α=0` recovers unweighted MSE exactly (`_weighted_mse` normalizer); anchor frames are sliced out of every loss tensor (`[:, :, anchor_frames:]`); shift-3 Wan sigmas follow `3σ/(1+2σ)`. If you change `native_flowmatch.py` semantics, update `docs/method.md` — it quotes these numbers.

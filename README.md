@@ -2,7 +2,7 @@
 
 Keyframe-conditioned native-animation video generation with Flow Matching.
 
-Given a single anime keyframe, the model generates a short continuation that preserves the frame's artistic style while producing the stylized, physics-violating motion — smears, impact frames, morphing — that defines high-quality 2D animation. Off-the-shelf video models inherit a photorealism prior from web-scale training data and reliably erase this motion (the *realism trap*); this project attacks that failure directly. See `paper/` for the current write-up.
+Given a single anime keyframe, the model generates a short continuation that preserves the frame's artistic style while producing the stylized, physics-violating motion — smears, impact frames, morphing — that defines high-quality 2D animation. Off-the-shelf video models inherit a photorealism prior from web-scale training data and reliably erase this motion (the *realism trap*); this project attacks that failure directly. The method write-up lives in `docs/method.md`; `paper/` will hold the CVPR 2027 manuscript.
 
 ## Method
 
@@ -32,7 +32,7 @@ A curated Sakugabooru corpus (~11.9k clips, 240+ series, 25 technique tags). The
 | `configs/paths.env` | Single source of truth for machine paths |
 | `scripts/`, `scripts/slurm/` | Cluster entrypoints |
 | `tests/` | CPU-only unit tests (`pytest`) |
-| `paper/` | The paper (LaTeX) |
+| `paper/` | CVPR 2027 manuscript (in progress) |
 | `docs/` | Method notes, dataset notes, research roadmap |
 | `experiments/` | Run outputs (gitignored) |
 

@@ -1,6 +1,6 @@
 # Method
 
-This document describes the technical method behind Native Animation Flow Matching (Native FM). For background and motivation, see the project [report](../paper/main.tex).
+This document describes the technical method behind Native Animation Flow Matching (Native FM).
 
 ## Problem statement
 
@@ -91,7 +91,7 @@ L = L_motion + lambda * L_delta
 
 with `lambda = 0.25` (`delta_loss_weight`). We deliberately keep `L_delta` smaller than `L_motion` at the per-frame scale: `L_delta` is a regularizer for stability, not a competing reconstruction objective.
 
-## Hyperparameters used in the reported runs
+## Default hyperparameters
 
 | Hyperparameter            | Value | Notes                                                    |
 | ------------------------- | ----- | -------------------------------------------------------- |
@@ -100,8 +100,7 @@ with `lambda = 0.25` (`delta_loss_weight`). We deliberately keep `L_delta` small
 | `delta_loss_weight`       | 0.25  | `lambda` in the final objective                          |
 | LoRA rank                 | 32    | Applied to `q,k,v,o,ffn.0,ffn.2` of the DiT              |
 | Resolution                | 480x832 | Matches Wan2.2-TI2V-5B's native I2V resolution          |
-| Frame count               | 49    | ~1.6s at 30fps; we also run 81 frames (~2.7s)            |
-| Dataset                   | ~1.2M | Sliding-window pairs from 11.8k Sakugabooru clips         |
+| Frame count               | 49    | ~1.6s at 30fps; 81 frames (~2.7s) also supported         |
 | Optimizer                 | AdamW | DiffSynth default                                        |
 
 ## Evaluation metrics
@@ -137,7 +136,7 @@ docs/          # this file
 
 ## References
 
-The core ideas are documented in the project report at `paper/main.tex` with a complete bibliography. The most directly relevant prior work is:
+The most directly relevant prior work:
 
 - Lipman et al., "Flow Matching for Generative Modeling," ICLR 2023.
 - Liu et al., "Flow Straight and Fast: Rectified Flow," ICLR 2023.
