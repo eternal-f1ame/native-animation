@@ -8,6 +8,7 @@ from native_animation.data.build_metadata import (
     build_prompt,
     build_series_split,
     find_video_for_json,
+    gather_json_paths,
     main,
 )
 
@@ -82,3 +83,43 @@ def test_end_to_end_build_has_no_series_leakage(tmp_path, monkeypatch):
             sizes[name] = len(list(csv.DictReader(handle)))
     assert sum(sizes.values()) == 20
     assert sizes["val"] >= 2 and sizes["test"] >= 2  # at least one series each (2 clips/series)
+
+
+def test_gather_json_paths_skips_root_level_state_file(tmp_path):
+    # The scraper keeps its resume state as a JSON at the dataset root; it is
+    # not a clip sidecar and must never be treated as one.
+    _make_clip(tmp_path, "series_a", 1)
+    (tmp_path / "_state.json").write_text("{}")
+    paths = gather_json_paths(tmp_path, limit=None)
+    assert [p.name for p in paths] == ["1.json"]
+
+
+def _build_split_map(root: Path, out_dir: Path, monkeypatch) -> dict:
+    """Run the full builder against ``root`` and return its series→split map."""
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["build_metadata", "--input-root", str(root), "--output-dir", str(out_dir), "--seed", "42"],
+    )
+    main()
+    with (out_dir / "metadata_all.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    return {row["series"]: row["split"] for row in rows}
+
+
+def test_split_is_independent_of_dataset_root_name(tmp_path, monkeypatch):
+    # Regression: a root-level _state.json used to leak the root directory's
+    # own name into the series-split shuffle, so renaming the dataset folder
+    # silently reshuffled train/val/test.
+    # Root names chosen to sort before vs. after the series names, mirroring
+    # the real incident (sakugabooru_clips vs clips): the phantom's sort
+    # position shifts every series' index, changing the whole assignment.
+    maps = {}
+    for root_name in ("aardvark_clips", "zebra_clips"):
+        root = tmp_path / root_name
+        for i in range(12):
+            _make_clip(root, f"series_{i}", post_id=100 + i)
+        (root / "_state.json").write_text(json.dumps({"downloaded": []}))
+        maps[root_name] = _build_split_map(root, tmp_path / f"meta_{root_name}", monkeypatch)
+    assert set(maps["aardvark_clips"]) == {f"series_{i}" for i in range(12)}  # no phantom series
+    assert maps["aardvark_clips"] == maps["zebra_clips"]

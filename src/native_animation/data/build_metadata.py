@@ -110,8 +110,15 @@ def load_json(path: Path) -> Dict:
 
 
 def gather_json_paths(input_root: Path, limit: Optional[int]) -> List[Path]:
-    """Collect every Sakugabooru JSON under ``input_root`` (optionally capped)."""
-    paths = sorted(input_root.rglob("*.json"))
+    """Collect every Sakugabooru clip-sidecar JSON under ``input_root`` (optionally capped).
+
+    Root-level JSON files (e.g. the scraper's ``_state.json`` resume state) are
+    excluded: they are not clip sidecars, and because the series split is keyed
+    on each JSON's parent-directory name, a root-level file would leak the
+    dataset directory's own name into the split shuffle — silently reshuffling
+    train/val/test whenever the dataset folder is renamed.
+    """
+    paths = sorted(path for path in input_root.rglob("*.json") if path.parent != input_root)
     if limit is not None:
         paths = paths[:limit]
     return paths
