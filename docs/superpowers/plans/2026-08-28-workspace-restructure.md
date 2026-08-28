@@ -31,7 +31,7 @@
 **Interfaces:**
 - Produces: the destination directories every later task moves into. Task 14 asserts the final root listing against this skeleton.
 
-- [ ] **Step 1: Gate on running SLURM jobs**
+- [x] **Step 1: Gate on running SLURM jobs**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -45,14 +45,14 @@ echo "preflight clear"
 
 Expected: `preflight clear`. (At plan time one job existed — `358562 ucf-vsco`, WorkDir `/home/aeternum`, outside the tree. If the loop prints BLOCKED, STOP and ask the user.)
 
-- [ ] **Step 2: Record the pre-migration snapshot**
+- [x] **Step 2: Record the pre-migration snapshot**
 
 ```bash
 mkdir -p "$WS/archive"
 { date; echo; df -h "$WS"; echo; find "$WS" -maxdepth 2 | sort; } > "$WS/archive/migration-snapshot.txt"
 ```
 
-- [ ] **Step 3: Create the skeleton**
+- [x] **Step 3: Create the skeleton**
 
 ```bash
 mkdir -p "$WS/data/sakugabooru/metadata" "$WS/data/sakugabooru/scrape-logs" \
@@ -61,7 +61,7 @@ mkdir -p "$WS/data/sakugabooru/metadata" "$WS/data/sakugabooru/scrape-logs" \
          "$WS/archive/runs-2026-04" "$WS/archive/prototypes"
 ```
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```bash
 ls "$WS" && ls "$WS/archive" && test -s "$WS/archive/migration-snapshot.txt" && echo OK
@@ -77,7 +77,7 @@ Expected: new dirs listed alongside the old ones; `OK`.
 - Move: `$WS/ComfyUI/` → `/home/aeternum/Research/Comic/ComfyUI/`
 - Move: `$WS/README_comfyui_setup.md` → `/home/aeternum/Research/Comic/README_comfyui_setup.md`
 
-- [ ] **Step 1: Move**
+- [x] **Step 1: Move**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -85,7 +85,7 @@ mv "$WS/ComfyUI" /home/aeternum/Research/Comic/ComfyUI
 mv "$WS/README_comfyui_setup.md" /home/aeternum/Research/Comic/README_comfyui_setup.md
 ```
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```bash
 test -d /home/aeternum/Research/Comic/ComfyUI/models && ! test -e "$WS/ComfyUI" && echo OK
@@ -107,7 +107,7 @@ test -d /home/aeternum/Research/Comic/ComfyUI/models && ! test -e "$WS/ComfyUI" 
 **Interfaces:**
 - Produces: `$WS/data/sakugabooru/clips/<series>/{post_id}_s{score}.mp4 + {post_id}.json` — the `DATA_ROOT` every script in Task 7 points at. 241 series directories.
 
-- [ ] **Step 1: Record the expected clip count, then move everything**
+- [x] **Step 1: Record the expected clip count, then move everything**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -126,7 +126,7 @@ rmdir "$WS/Anime"
 
 `rmdir` (not `rm -rf`) is deliberate: it fails loudly if anything unexpected remains. If it fails, list the leftovers, move them to `$WS/archive/planning/`, and rerun.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```bash
 test $(ls "$WS/data/sakugabooru/clips" | grep -vc '^_state.json$') -eq 241 \
@@ -148,7 +148,7 @@ test $(ls "$WS/data/sakugabooru/clips" | grep -vc '^_state.json$') -eq 241 \
 **Interfaces:**
 - Produces: `$WS/models/DiffSynth-Studio/…` and `$WS/models/Wan-AI/…` (the shared weight cache Task 7's symlink targets); `$WS/data/sakugabooru/metadata/metadata_{all,train,val,test}.csv` (11,786 total rows; video paths are RELATIVE to the clips root, so they stay valid); `$WS/archive/runs-2026-04/dist/native_animation_submission/` (Task 6's diff target for the stale dirs).
 
-- [ ] **Step 1: Move runtime state**
+- [x] **Step 1: Move runtime state**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -161,7 +161,7 @@ mv "$F/dist" "$WS/archive/runs-2026-04/dist"
 rmdir "$F/models" "$F/data/course_flowmatch_i2v" "$F/data" 2>/dev/null || true
 ```
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```bash
 ls "$WS/models"                                    # expect: DiffSynth-Studio  Wan-AI
@@ -180,7 +180,7 @@ Note: the fork stays where it is, dirtier but intact — it is frozen as-is in T
 - Move: `$WS/FlowMatching/{DiffSynth-Studio,goku,Sana,Pyramid-Flow,flowception,Janus,CausVid}/` → `$WS/third_party/`
 - Create: `$WS/third_party/README.md`
 
-- [ ] **Step 1: Move**
+- [x] **Step 1: Move**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -190,7 +190,7 @@ for d in DiffSynth-Studio goku Sana Pyramid-Flow flowception Janus CausVid; do
 done
 ```
 
-- [ ] **Step 2: Write `$WS/third_party/README.md`**
+- [x] **Step 2: Write `$WS/third_party/README.md`**
 
 ```markdown
 # Third-Party Trees
@@ -209,7 +209,7 @@ Read-only reference material. Nothing here is developed; the live codebase is `.
 | `CausVid/` | Unused (autoregressive video distillation reference). |
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```bash
 test $(ls "$WS/third_party" | wc -l) -eq 9 && ls "$WS/FlowMatching"
@@ -230,7 +230,7 @@ Expected: 9 entries (8 trees + README); `FlowMatching/` now holds only `native-a
 **Interfaces:**
 - Produces: repo at `$WS/native-animation` on branch `main` with `paper/` (containing `main.tex`, `sample.bib`, `images/`, result PNGs, `scripts/`) and no untracked noise. All later tasks operate here.
 
-- [ ] **Step 1: Relocate the repo**
+- [x] **Step 1: Relocate the repo**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -238,7 +238,7 @@ mv "$WS/FlowMatching/native-animation-flowmatching" "$WS/native-animation"
 cd "$WS/native-animation" && git status --short   # sanity: git works at the new path
 ```
 
-- [ ] **Step 2: Diff-verify the stale flat-export dirs, then delete (or archive if divergent)**
+- [x] **Step 2: Diff-verify the stale flat-export dirs, then delete (or archive if divergent)**
 
 The untracked root `course_project/` and `diffsynth/` are believed to be copies of the old flat export. Prove it, then delete; if either diverges, archive it instead of deleting:
 
@@ -264,7 +264,7 @@ ls course_project diffsynth 2>&1   # both must report "No such file or directory
 
 Deleting these is also a bugfix: the stale `diffsynth/` shadows `src/diffsynth` for cwd-based imports and is missing `core/data`.
 
-- [ ] **Step 3: Archive presentation and course-report artifacts**
+- [x] **Step 3: Archive presentation and course-report artifacts**
 
 ```bash
 mv presentation "$WS/archive/course-report/presentation"
@@ -272,7 +272,7 @@ mv Final_Project_Report/Final_Project_Report_Aaditya.pdf "$WS/archive/course-rep
 mv Final_Project_Report/frog.jpg "$WS/archive/course-report/"
 ```
 
-- [ ] **Step 4: Commit the purge (records `main.pdf` deletion; tree has no untracked noise left)**
+- [x] **Step 4: Commit the purge (records `main.pdf` deletion; tree has no untracked noise left)**
 
 ```bash
 git add -A
@@ -284,7 +284,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 If `git status` shows anything besides the `main.pdf` deletion, stop and inspect before committing.
 
-- [ ] **Step 5: Rename the report directory and commit**
+- [x] **Step 5: Rename the report directory and commit**
 
 ```bash
 git mv Final_Project_Report paper
@@ -310,7 +310,7 @@ ls paper    # expect: main.tex sample.bib images/ scripts/ *.png
 - Consumes: `$WS/data/sakugabooru/{clips,metadata}` (Task 3/4), `$WS/models` (Task 4).
 - Produces: `configs/paths.env` exporting `REPO_ROOT, WORKSPACE_ROOT, DATA_ROOT, METADATA_DIR, MODELS_ROOT, EXPERIMENTS_ROOT` — every script and doc from here on assumes these names. pyproject test config: `pythonpath=["src"]`, `testpaths=["tests"]` (Task 9 relies on it).
 
-- [ ] **Step 1: Replace `pyproject.toml` with:**
+- [x] **Step 1: Replace `pyproject.toml` with:**
 
 ```toml
 [build-system]
@@ -377,7 +377,7 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 ```
 
-- [ ] **Step 2: Create `configs/paths.env` with:**
+- [x] **Step 2: Create `configs/paths.env` with:**
 
 ```bash
 # Native Animation — single source of truth for machine paths.
@@ -393,7 +393,7 @@ EXPERIMENTS_ROOT=${EXPERIMENTS_ROOT:-$REPO_ROOT/experiments}
 export REPO_ROOT WORKSPACE_ROOT DATA_ROOT METADATA_DIR MODELS_ROOT EXPERIMENTS_ROOT
 ```
 
-- [ ] **Step 3: Replace `.gitignore` with:**
+- [x] **Step 3: Replace `.gitignore` with:**
 
 ```
 __pycache__/
@@ -433,7 +433,7 @@ paper/main.log
 paper/main.out
 ```
 
-- [ ] **Step 4: Create the experiments scaffold and the model-cache symlink**
+- [x] **Step 4: Create the experiments scaffold and the model-cache symlink**
 
 ```bash
 cd "$WS/native-animation"
@@ -444,7 +444,7 @@ readlink -f models    # expect /home/aeternum/Research/Comic/Cartoon/models
 
 The symlink makes DiffSynth's cwd-relative `./models/...` downloads land in the shared workspace cache. The committed `.gitkeep` guarantees `experiments/logs/` exists at sbatch submission time — SLURM does not create missing `--output` directories.
 
-- [ ] **Step 5: Replace `scripts/train_native_animation.sh` with:**
+- [x] **Step 5: Replace `scripts/train_native_animation.sh` with:**
 
 ```bash
 #!/bin/bash
@@ -498,7 +498,7 @@ accelerate launch ${ACCELERATE_EXTRA_ARGS} src/native_animation/training/train.p
   --delta_loss_weight "${DELTA_LOSS_WEIGHT}"
 ```
 
-- [ ] **Step 6: Replace `scripts/slurm/build_metadata.sbatch` with:**
+- [x] **Step 6: Replace `scripts/slurm/build_metadata.sbatch` with:**
 
 ```bash
 #!/bin/bash
@@ -532,7 +532,7 @@ python -m native_animation.data.build_metadata \
   --test-ratio 0.1
 ```
 
-- [ ] **Step 7: Replace `scripts/slurm/env_smoke_test.sbatch` with:**
+- [x] **Step 7: Replace `scripts/slurm/env_smoke_test.sbatch` with:**
 
 ```bash
 #!/bin/bash
@@ -565,7 +565,7 @@ nvidia-smi
 timeout 120s python -u -c "import sys; print('exe=', sys.executable, flush=True); import torch; print('torch=', torch.__version__, flush=True); print('cuda=', torch.cuda.is_available(), flush=True); import accelerate; print('accelerate=', accelerate.__version__, flush=True); import native_animation; print('native_animation=', native_animation.__version__, flush=True); import diffsynth; print('diffsynth=ok', flush=True)"
 ```
 
-- [ ] **Step 8: Replace `scripts/slurm/base_inference_demo.sbatch` with:**
+- [x] **Step 8: Replace `scripts/slurm/base_inference_demo.sbatch` with:**
 
 ```bash
 #!/bin/bash
@@ -613,7 +613,7 @@ python -m native_animation.inference.run_baseline \
   --tiled
 ```
 
-- [ ] **Step 9: Replace `scripts/slurm/train_native_animation.sbatch` with:**
+- [x] **Step 9: Replace `scripts/slurm/train_native_animation.sbatch` with:**
 
 ```bash
 #!/bin/bash
@@ -661,7 +661,7 @@ export MODEL_ID_WITH_ORIGIN_PATHS=${MODEL_ID_WITH_ORIGIN_PATHS:-Wan-AI/Wan2.2-TI
 bash scripts/train_native_animation.sh
 ```
 
-- [ ] **Step 10: Verify scripts parse and paths resolve**
+- [x] **Step 10: Verify scripts parse and paths resolve**
 
 ```bash
 cd "$WS/native-animation"
@@ -671,7 +671,7 @@ bash -c 'source configs/paths.env && echo "$DATA_ROOT" && echo "$METADATA_DIR" &
 
 Expected: no syntax failures; the two paths print under `$WS/data/sakugabooru/`; `PATHS-OK`.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add pyproject.toml configs/paths.env .gitignore scripts/ experiments/logs/.gitkeep models
@@ -694,7 +694,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes: staged scripts from Task 3.
 - Produces: `tools/` whose default paths resolve to the workspace data layout: from `tools/<script>.py`, `Path(__file__).resolve().parents[2]` == `$WS`.
 
-- [ ] **Step 1: Move**
+- [x] **Step 1: Move**
 
 ```bash
 cd "$WS/native-animation" && mkdir -p tools
@@ -704,7 +704,7 @@ mv "$WS/archive/planning/tools-staging/build_dataset.py"      tools/build_pair_d
 rmdir "$WS/archive/planning/tools-staging"
 ```
 
-- [ ] **Step 2: Update path constants**
+- [x] **Step 2: Update path constants**
 
 In `tools/scrape_sakugabooru.py` (constants at ~lines 38 and 229–230):
 
@@ -743,7 +743,7 @@ grep -n 'cf_cookies\|sakugabooru_clips\|"dataset"' tools/*.py
 
 Every hit must be the new `parents[2]`-based form (or a docstring mention).
 
-- [ ] **Step 3: Verify compile + default resolution**
+- [x] **Step 3: Verify compile + default resolution**
 
 ```bash
 COMFY_PY=/home/aeternum/anaconda3/envs/comfy/bin/python
@@ -758,7 +758,7 @@ print("RESOLVE-OK", p)
 EOF
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tools/
@@ -780,7 +780,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 All expected values below were verified against the live code on this machine before this plan was written: the shift-3 Wan sigmas match `3σ/(1+2σ)`, `_motion_frame_weights` returns `(2,1,4,1,1)` with `anchor_frames=1` and max exactly `1+scale`, DFS is `0.0` on a flat curve and `≈0.777` on the collapse curve. A test failure therefore means a real regression (or environment problem), not a wrong expectation.
 
-- [ ] **Step 1: Install pytest into `comfy` (verified absent at plan time)**
+- [x] **Step 1: Install pytest into `comfy` (verified absent at plan time)**
 
 ```bash
 COMFY_PY=/home/aeternum/anaconda3/envs/comfy/bin/python
@@ -788,7 +788,7 @@ $COMFY_PY -m pip install pytest
 $COMFY_PY -m pytest --version
 ```
 
-- [ ] **Step 2: Write `tests/test_imports.py`**
+- [x] **Step 2: Write `tests/test_imports.py`**
 
 ```python
 """Import sweep over the light modules.
@@ -815,7 +815,7 @@ def test_module_imports(name):
     importlib.import_module(name)
 ```
 
-- [ ] **Step 3: Write `tests/test_native_flowmatch.py`**
+- [x] **Step 3: Write `tests/test_native_flowmatch.py`**
 
 ```python
 """Invariants of the project-owned scheduler and loss helpers (CPU-only)."""
@@ -887,7 +887,7 @@ def test_weighted_mse_is_invariant_to_weight_rescaling():
     )
 ```
 
-- [ ] **Step 4: Write `tests/test_build_metadata.py`**
+- [x] **Step 4: Write `tests/test_build_metadata.py`**
 
 ```python
 """Metadata builder: split determinism, series-level leakage guarantee, CSV shape."""
@@ -976,7 +976,7 @@ def test_end_to_end_build_has_no_series_leakage(tmp_path, monkeypatch):
     assert sizes["val"] >= 2 and sizes["test"] >= 2  # at least one series each (2 clips/series)
 ```
 
-- [ ] **Step 5: Write `tests/test_evaluate_metrics.py`**
+- [x] **Step 5: Write `tests/test_evaluate_metrics.py`**
 
 ```python
 """Aggregate metric behavior on synthetic score curves (no CLIP, no video IO)."""
@@ -1034,7 +1034,7 @@ def test_final_score_formula_and_classification():
     assert classify_result(failing) == "[FAIL] Diffusion failure"
 ```
 
-- [ ] **Step 6: Run the suite**
+- [x] **Step 6: Run the suite**
 
 ```bash
 cd "$WS/native-animation"
@@ -1044,7 +1044,7 @@ env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 \
 
 Expected: all tests PASS (≈17 tests). A failure is a real finding — investigate the code, do not adjust the expectation to match; if it exposes a genuine pre-existing bug, report it to the user before "fixing" project semantics.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/
@@ -1062,7 +1062,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Delete: `export_manifest.json`
 - Create: `docs/dataset.md`, `docs/roadmap.md`, `CLAUDE.md` (repo-level)
 
-- [ ] **Step 1: Replace `README.md` with:**
+- [x] **Step 1: Replace `README.md` with:**
 
 ```markdown
 # Native Animation
@@ -1142,7 +1142,7 @@ python -m pytest
 Apache-2.0. `src/diffsynth/` provenance in `THIRD_PARTY.md`.
 ```
 
-- [ ] **Step 2: Replace `THIRD_PARTY.md` with:**
+- [x] **Step 2: Replace `THIRD_PARTY.md` with:**
 
 ```markdown
 # Third-Party Components
@@ -1154,7 +1154,7 @@ Provenance: the subset was carved from the project's former DiffSynth working fo
 When the method needs deeper runtime access, copy the required modules from the frozen fork (or current upstream) into `src/diffsynth/` and note the addition here. Keep the root `LICENSE` file with the vendored code when publishing.
 ```
 
-- [ ] **Step 3: Delete the exporter manifest and fix the method.md link**
+- [x] **Step 3: Delete the exporter manifest and fix the method.md link**
 
 ```bash
 git rm export_manifest.json
@@ -1162,7 +1162,7 @@ git rm export_manifest.json
 
 In `docs/method.md`, change the intro line's link target `../Final_Project_Report/main.tex` → `../paper/main.tex` (both occurrences if repeated; check with `grep -n Final_Project_Report docs/method.md`).
 
-- [ ] **Step 4: Create `docs/dataset.md` with:**
+- [x] **Step 4: Create `docs/dataset.md` with:**
 
 ```markdown
 # Sakugabooru Dataset
@@ -1196,7 +1196,7 @@ Built by `python -m native_animation.data.build_metadata` (or `scripts/slurm/bui
 - **Benchmarks:** frozen evaluation sets belong in `<workspace>/data/benchmarks/` (reserved).
 ```
 
-- [ ] **Step 5: Create `docs/roadmap.md` with:**
+- [x] **Step 5: Create `docs/roadmap.md` with:**
 
 ```markdown
 # Research Roadmap — CVPR 2027
@@ -1218,7 +1218,7 @@ Target: CVPR 2027 submission (~mid-November 2026).
 - `experiments/` has no per-run directory convention yet; introduce one alongside a config system.
 ```
 
-- [ ] **Step 6: Create repo-level `CLAUDE.md` with:**
+- [x] **Step 6: Create repo-level `CLAUDE.md` with:**
 
 ```markdown
 # CLAUDE.md
@@ -1273,7 +1273,7 @@ tail -n 120 experiments/logs/<jobname>-<id>.{out,err}
 `α=0` recovers unweighted MSE exactly (`_weighted_mse` normalizer); anchor frames are sliced out of every loss tensor (`[:, :, anchor_frames:]`); shift-3 Wan sigmas follow `3σ/(1+2σ)`. If you change `native_flowmatch.py` semantics, update `docs/method.md` and `paper/` — they quote these numbers.
 ```
 
-- [ ] **Step 7: String audit**
+- [x] **Step 7: String audit**
 
 ```bash
 cd "$WS/native-animation"
@@ -1284,7 +1284,7 @@ grep -rniE 'course|submission bundle|team contribution' \
 
 Expected: zero hits (the spec/plan under `docs/superpowers/` are historical records and exempt). Rewrite any straggler in research-neutral language, EXCEPT inside `paper/*.tex` — if the audit hits the paper, flag it to the user instead of editing the paper's prose.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add README.md THIRD_PARTY.md docs/ CLAUDE.md
@@ -1299,7 +1299,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Files:** none (remote + git config only)
 
-- [ ] **Step 1: Rename on GitHub (gh is authed as `eternal-f1ame` with repo scope)**
+- [x] **Step 1: Rename on GitHub (gh is authed as `eternal-f1ame` with repo scope)**
 
 ```bash
 cd "$WS/native-animation"
@@ -1308,7 +1308,7 @@ gh repo rename native-animation -R eternal-f1ame/Dynamic-Panel-Animation --yes
 
 If this fails, tell the user to rename `Dynamic-Panel-Animation` → `native-animation` in the GitHub UI (Settings → General), then continue.
 
-- [ ] **Step 2: Update the local remote and push**
+- [x] **Step 2: Update the local remote and push**
 
 ```bash
 git remote set-url origin git@github.com:eternal-f1ame/native-animation.git
@@ -1327,7 +1327,7 @@ Expected: push succeeds (GitHub redirects old clones, but the explicit set-url k
 - Delete: `$WS/FlowMatching/.claude/`, `$WS/FlowMatching/.codex`, then `$WS/FlowMatching/`
 - Create: `$WS/archive/README.md`
 
-- [ ] **Step 1: Move and delete**
+- [x] **Step 1: Move and delete**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
@@ -1342,7 +1342,7 @@ rmdir "$WS/FlowMatching"
 
 `rmdir` fails loudly on leftovers; if it does, list them, archive anything unexpected, rerun.
 
-- [ ] **Step 2: Write `$WS/archive/README.md`**
+- [x] **Step 2: Write `$WS/archive/README.md`**
 
 ```markdown
 # Archive
@@ -1358,7 +1358,7 @@ Historical record of the course-project era (through Aug 2026). Nothing here is 
 | `migration-snapshot.txt` | Workspace listing + disk state immediately before the 2026-08-28 restructure |
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```bash
 ! test -e "$WS/FlowMatching" && ls "$WS/archive" && echo OK
@@ -1371,7 +1371,7 @@ Historical record of the course-project era (through Aug 2026). Nothing here is 
 **Files:**
 - Modify: `$WS/CLAUDE.md` (full replacement below — the old content is superseded; its operational knowledge now lives in the repo-level CLAUDE.md from Task 10)
 
-- [ ] **Step 1: Replace `$WS/CLAUDE.md` with:**
+- [x] **Step 1: Replace `$WS/CLAUDE.md` with:**
 
 ```markdown
 # CLAUDE.md
@@ -1398,7 +1398,7 @@ The research workspace for **Native Animation** — keyframe-conditioned native-
 - Cluster/SLURM conventions and code gotchas live in `native-animation/CLAUDE.md` — read that before running anything.
 ```
 
-- [ ] **Step 2: Verify** — read the file back; confirm it names only paths that exist.
+- [x] **Step 2: Verify** — read the file back; confirm it names only paths that exist.
 
 ---
 
@@ -1406,14 +1406,14 @@ The research workspace for **Native Animation** — keyframe-conditioned native-
 
 **Files:** none created. This is the spec's §6 checklist; every step must pass. Fix-forward small issues; STOP and report anything structural.
 
-- [ ] **Step 1: Workspace shape**
+- [x] **Step 1: Workspace shape**
 
 ```bash
 WS=/home/aeternum/Research/Comic/Cartoon
 ls -A "$WS"    # expect exactly: .claude  CLAUDE.md  archive  data  models  native-animation  third_party
 ```
 
-- [ ] **Step 2: Test suite green**
+- [x] **Step 2: Test suite green**
 
 ```bash
 cd "$WS/native-animation"
@@ -1421,14 +1421,14 @@ env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 \
   /home/aeternum/anaconda3/envs/comfy/bin/python -m pytest
 ```
 
-- [ ] **Step 3: Everything compiles**
+- [x] **Step 3: Everything compiles**
 
 ```bash
 env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 \
   bash -c 'find src/native_animation tools -name "*.py" -exec /home/aeternum/anaconda3/envs/comfy/bin/python -m py_compile {} + && echo COMPILE-OK'
 ```
 
-- [ ] **Step 4: Metadata regeneration is diff-clean against the moved CSVs**
+- [x] **Step 4: Metadata regeneration is diff-clean against the moved CSVs**
 
 ```bash
 env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 PYTHONPATH=$PWD/src \
@@ -1441,7 +1441,7 @@ done
 
 Expected: no `DIFFERS` lines → copy the fresh `summary.json` (its absolute paths now reflect the new layout): `cp /tmp/na_meta_verify/summary.json "$WS/data/sakugabooru/metadata/summary.json"`. If any CSV differs: KEEP the moved CSVs (they are the ground truth the reported numbers used), do not replace anything, and report the diff to the user — the original cluster build may have used non-default flags.
 
-- [ ] **Step 5: Real data-path exercise — extract one keyframe**
+- [x] **Step 5: Real data-path exercise — extract one keyframe**
 
 ```bash
 env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 PYTHONPATH=$PWD/src \
@@ -1452,7 +1452,7 @@ env OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1 PYTH
 ls /tmp/na_keyframe_verify/*.png && echo KEYFRAME-OK
 ```
 
-- [ ] **Step 6: No stale-path references anywhere live**
+- [x] **Step 6: No stale-path references anywhere live**
 
 ```bash
 grep -rn 'FlowMatching\|/Anime/\|course_flowmatch\|course_project' \
@@ -1464,7 +1464,7 @@ grep -rniE 'course' --include='*.py' --include='*.md' --include='*.toml' --inclu
 
 Expected: zero output from both.
 
-- [ ] **Step 7: Git end state**
+- [x] **Step 7: Git end state**
 
 ```bash
 cd "$WS/native-animation" && git status --short && git log --oneline -12 && git remote -v
@@ -1472,7 +1472,7 @@ cd "$WS/native-animation" && git status --short && git log --oneline -12 && git 
 
 Expected: clean status; the phase commits present; remote URL `git@github.com:eternal-f1ame/native-animation.git`; branch pushed.
 
-- [ ] **Step 8: Report + offer the optional cluster check**
+- [x] **Step 8: Report + offer the optional cluster check**
 
 Summarize results to the user and offer (do not auto-submit): `sbatch scripts/slurm/env_smoke_test.sbatch` as the final GPU-node validation, and note the two roadmap debts (`open-clip-torch` missing; CVPR template port pending).
 
