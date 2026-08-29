@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --job-name=na-delta-scrape
+#SBATCH --partition=short
+#SBATCH --time=23:00:00
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=4G
+#SBATCH --export=ALL
+#SBATCH --output=experiments/logs/%x-%j.out
+#SBATCH --error=experiments/logs/%x-%j.err
+
+set -euo pipefail
+
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+cd "$REPO_ROOT"
+source "$REPO_ROOT/configs/paths.env"
+
+MAX_ID=$(python -c "import json;print(json.load(open('$WORKSPACE_ROOT/data/sakugabooru/extraction-summary.json'))['max_post_id'])")
+echo "delta scrape from post id $((MAX_ID+1))"
+python tools/scrape_sakugabooru.py --anime "id:$((MAX_ID+1))..400000" --limit 999999 --min-score 0
