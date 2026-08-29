@@ -16,7 +16,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-python tools/profile_motion.py \
+"$COMFY_PY" tools/profile_motion.py \
   --shots-dir "$SAKUGA_ROOT/shots" \
   --out-dir "$SAKUGA_ROOT/profiles" \
   --config configs/stage0.yaml \

@@ -20,14 +20,14 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "host=$(hostname)"; nvidia-smi | head -12 || true
 
-accelerate launch \
+"$COMFY_ACCEL" launch \
   --config_file configs/accelerate_fsdp.yaml \
   --num_processes "${SLURM_GPUS_ON_NODE:-4}" \
   src/native_animation/training/stages/train_stage.py \
   --config configs/smoke_v1data.yaml \
   --smoke-steps 3 --dataset-limit 8
 
-python - <<'EOF'
+"$COMFY_PY" - <<'EOF'
 import torch
 print("smoke complete; per-rank peak memory printed above by torch if any")
 EOF

@@ -23,10 +23,10 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 echo "HOSTNAME=$(hostname)"
 echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
 echo "PYTHON=$(which python)"
-python -V
+"$COMFY_PY" -V
 nvidia-smi
 
-python -m native_animation.inference.run_baseline \
+"$COMFY_PY" -m native_animation.inference.run_baseline \
   --input-csv "$METADATA_DIR/metadata_test.csv" \
   --dataset-base-path "$DATA_ROOT" \
   --output-dir "$EXPERIMENTS_ROOT/demo/base" \

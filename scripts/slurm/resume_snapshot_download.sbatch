@@ -11,7 +11,7 @@ set -euo pipefail
 REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
-python - <<'PY'
+"$COMFY_PY" - <<'PY'
 from huggingface_hub import snapshot_download
 p = snapshot_download(repo_id='trojblue/sakugabooru2025', repo_type='dataset',
                       local_dir='/share/datasets/native-animation/sakugabooru/snapshot-2025',

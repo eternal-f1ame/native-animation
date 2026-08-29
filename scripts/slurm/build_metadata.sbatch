@@ -19,9 +19,9 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "CONDA_DEFAULT_ENV=${CONDA_DEFAULT_ENV:-}"
 echo "PYTHON=$(which python)"
-python -V
+"$COMFY_PY" -V
 
-python -m native_animation.data.build_metadata \
+"$COMFY_PY" -m native_animation.data.build_metadata \
   --input-root "$DATA_ROOT" \
   --output-dir "$METADATA_DIR" \
   --seed 42 \

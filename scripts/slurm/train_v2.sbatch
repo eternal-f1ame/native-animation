@@ -23,7 +23,7 @@ NUM_GPUS=${SLURM_GPUS_ON_NODE:-4}
 echo "stage=$STAGE_CONFIG gpus=$NUM_GPUS host=$(hostname)"
 nvidia-smi | head -10
 
-accelerate launch \
+"$COMFY_ACCEL" launch \
   --config_file configs/accelerate_fsdp.yaml \
   --num_processes "$NUM_GPUS" \
   src/native_animation/training/stages/train_stage.py \

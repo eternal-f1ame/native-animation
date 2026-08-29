@@ -16,4 +16,4 @@ source "$REPO_ROOT/configs/paths.env"
 
 MAX_ID=$(python -c "import json;print(json.load(open('$SAKUGA_ROOT/extraction-summary.json'))['max_post_id'])")
 echo "delta scrape from post id $((MAX_ID+1))"
-python tools/scrape_sakugabooru.py --anime "id:$((MAX_ID+1))..400000" --limit 999999 --min-score 0
+"$COMFY_PY" tools/scrape_sakugabooru.py --anime "id:$((MAX_ID+1))..400000" --limit 999999 --min-score 0

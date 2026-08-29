@@ -18,7 +18,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-python tools/vae_fidelity_check.py \
+"$COMFY_PY" tools/vae_fidelity_check.py \
   --metadata-csv "$METADATA_DIR/metadata_test.csv" \
   --dataset-base-path "$DATA_ROOT" \
   --out-dir experiments/smoke/vae_fidelity \

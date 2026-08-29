@@ -16,7 +16,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-python tools/split_shots.py \
+"$COMFY_PY" tools/split_shots.py \
   --clips-dir "$SAKUGA_ROOT/clips" \
   --out-dir "$SAKUGA_ROOT/shots" \
   --config configs/stage0.yaml \
