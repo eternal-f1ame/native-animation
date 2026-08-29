@@ -142,3 +142,26 @@ The most directly relevant prior work:
 - Liu et al., "Flow Straight and Fast: Rectified Flow," ICLR 2023.
 - Esser et al., "Scaling Rectified Flow Transformers for High-Resolution Image Synthesis," ICML 2024.
 - Wan Team, "Wan2.x: Open and Advanced Large-Scale Video Generative Models," 2025.
+
+## v2 (2026-08): the overhaul in brief
+
+v2 keeps the animation-first goals and upgrades each mechanism (full design:
+`superpowers/specs/2026-08-28-native-fm-v2-design.md`):
+
+- **Anchoring generalized — the animator's contract.** The single-keyframe clamp
+  becomes an anchor *set* A (keyframe / first+last / sparse storyboard / none,
+  sampled per clip). Anchor latents are clamped clean, excluded from the loss,
+  and run at t=0 through the DiT's separated-timestep path; inference re-clamps
+  every anchor slot each step (`inference/anchored.py`).
+- **Delta consistency corrected.** v1's x0-space delta term scaled as sigma^2
+  (x0-error = -sigma * v-error), overweighting the noisiest timesteps. v2
+  penalizes v-space error smoothness — mathematically the sigma-uniform
+  correction — in `modeling/objectives.py`; the v1 arm survives as an ablation.
+- **Timestep density made explicit.** shift=3 becomes one point in a
+  LogitNormal(m, s) + shift family with a 5% low-SNR tail
+  (`modeling/timesteps.py`), swept rather than assumed.
+- **Curriculum + rebalancing.** Sigmoid difficulty gate over motion/deformation
+  quantiles times inverse-marginal rebalance weights (`training/curriculum.py`).
+- **Training program.** CT-lite (full fine-tune, FSDP) -> curriculum SFT ->
+  GT-anchored preference stage (Plan 3), all through the resumable
+  `training/runner_v2.py`.

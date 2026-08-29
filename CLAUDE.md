@@ -48,3 +48,21 @@ tail -n 120 experiments/logs/<jobname>-<id>.{out,err}
 ## Method invariants the tests pin
 
 `α=0` recovers unweighted MSE exactly (`_weighted_mse` normalizer); anchor frames are sliced out of every loss tensor (`[:, :, anchor_frames:]`); shift-3 Wan sigmas follow `3σ/(1+2σ)`. If you change `native_flowmatch.py` semantics, update `docs/method.md` — it quotes these numbers.
+
+## v2 commands
+
+```bash
+# smoke gates (run before any real training stage)
+sbatch scripts/slurm/smoke_memory.sbatch        # FSDP full-FT fits? s/step?
+sbatch scripts/slurm/smoke_vae_fidelity.sbatch  # 16x VAE vs line art
+
+# training stages (config-driven; STAGE_CONFIG picks ct_a/ct_b/sft)
+STAGE_CONFIG=configs/ct_a.yaml sbatch scripts/slurm/train_v2.sbatch
+
+# tests on a compute node (login node contends with data jobs)
+TEST_TARGETS=tests sbatch scripts/slurm/run_tests.sbatch
+
+# Stage-0 data pipeline (after the corpus merge completes)
+sbatch scripts/slurm/delta_scrape.sbatch && sbatch scripts/slurm/split_shots.sbatch
+sbatch scripts/slurm/profile_motion.sbatch && sbatch scripts/slurm/annotate.sbatch
+```
