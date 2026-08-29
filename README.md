@@ -51,7 +51,7 @@ sbatch scripts/slurm/env_smoke_test.sbatch
 # 3. untuned-baseline generations on held-out clips
 sbatch scripts/slurm/base_inference_demo.sbatch
 
-# 4. fine-tune Native FM (hyperparameters override via env, e.g. NUM_FRAMES=81)
+# 4. fine-tune the native-animation model (hyperparameters override via env, e.g. NUM_FRAMES=81)
 sbatch scripts/slurm/train_native_animation.sbatch
 
 # 5. generate from one keyframe with a trained LoRA
