@@ -101,6 +101,7 @@ def main() -> None:
         lora_target_modules=cfg["model"].get("lora_target_modules", ""),
         lora_rank=cfg["model"].get("lora_rank", 32),
         use_gradient_checkpointing=True,
+        use_gradient_checkpointing_offload=cfg["model"].get("gradient_checkpointing_offload", False),
         extra_inputs=None,
         task="sft",
         device="cpu" if cfg["model"].get("initialize_on_cpu", True) else accelerator.device,

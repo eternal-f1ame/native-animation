@@ -9,6 +9,7 @@ model:
   tokenizer_path: "/home/aeternum/Research/Comic/Cartoon/models/Wan-AI/Wan2.1-T2V-1.3B/google/umt5-xxl"
   trainable_models: dit
   initialize_on_cpu: true
+  gradient_checkpointing_offload: true
   # After CT completes, point at the CT-b checkpoint via model_paths override in the sbatch.
 data:
   metadata_csv: ../data/sakugabooru/metadata/v2/metadata_train.csv

@@ -16,6 +16,7 @@ set -euo pipefail
 REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 STAGE_CONFIG=${STAGE_CONFIG:-configs/ct_a.yaml}
