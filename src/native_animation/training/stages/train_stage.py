@@ -90,8 +90,12 @@ def main() -> None:
             gamma=cur_cfg.get("gamma", 8.0), beta=cur_cfg.get("beta", 0.25))
         dataset = CurriculumDataset(dataset, curriculum)
 
+    import json as _json
+    model_paths = cfg["model"].get("model_paths")
     model = NativeAnimationV2Module(
-        model_id_with_origin_paths=cfg["model"]["model_id_with_origin_paths"],
+        model_paths=_json.dumps(model_paths) if model_paths else None,
+        model_id_with_origin_paths=None if model_paths else cfg["model"].get("model_id_with_origin_paths"),
+        tokenizer_path=cfg["model"].get("tokenizer_path"),
         trainable_models=cfg["model"].get("trainable_models", "dit"),
         lora_base_model=cfg["model"].get("lora_base_model"),
         lora_target_modules=cfg["model"].get("lora_target_modules", ""),
