@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import zlib
 import sys
 from pathlib import Path
 
@@ -48,9 +49,9 @@ def main() -> None:
     args = parser.parse_args()
 
     pcfg = yaml.safe_load(args.config.read_text())["profiling"]
-    manifest = args.shots_dir / "manifests" / f"shard_{args.shard:04d}.jsonl"
-    if not manifest.exists():
-        print("no manifest shard; nothing to do")
+    manifests = sorted((args.shots_dir / "manifests").glob("shard_*.jsonl"))
+    if not manifests:
+        print("no manifests yet; nothing to do")
         return
     args.out_dir.mkdir(parents=True, exist_ok=True)
     out_path = args.out_dir / f"shard_{args.shard:04d}.jsonl"
@@ -60,9 +61,13 @@ def main() -> None:
             done = {json.loads(line)["shot_id"] for line in handle if line.strip()}
 
     processed = 0
-    with manifest.open() as src, out_path.open("a") as out:
-        for line in src:
+    with out_path.open("a") as out:
+      for manifest in manifests:
+        with manifest.open() as src:
+          for line in src:
             rec = json.loads(line)
+            if zlib.crc32(rec["shot_id"].encode()) % 64 != args.shard % 64:
+                continue
             if rec["shot_id"] in done or not rec["curation"]["pass"]:
                 continue
             energies, residuals = [], []
