@@ -50,6 +50,7 @@ def main() -> None:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--shard", type=int, required=True)
     parser.add_argument("--limit", type=int, default=None, help="Cap shots this run (smoke tests).")
+    parser.add_argument("--backend", choices=["vllm", "transformers"], default="vllm")
     args = parser.parse_args()
 
     acfg = yaml.safe_load(args.config.read_text())["annotation"]
@@ -64,10 +65,34 @@ def main() -> None:
         with out_path.open() as handle:
             done = {json.loads(line)["shot_id"] for line in handle if line.strip()}
 
-    from vllm import LLM, SamplingParams
+    if args.backend == "vllm":
+        from vllm import LLM, SamplingParams
 
-    llm = LLM(model=acfg["model_id"], max_model_len=8192, limit_mm_per_prompt={"video": 1})
-    params = SamplingParams(temperature=0.2, max_tokens=1024)
+        llm = LLM(model=acfg["model_id"], max_model_len=8192, limit_mm_per_prompt={"video": 1})
+        params = SamplingParams(temperature=0.2, max_tokens=1024)
+
+        def generate(messages: list) -> str:
+            return llm.chat(messages, params)[0].outputs[0].text
+    else:
+        import torch
+        from qwen_vl_utils import process_vision_info
+        from transformers import AutoModelForImageTextToText, AutoProcessor
+
+        model = AutoModelForImageTextToText.from_pretrained(
+            acfg["model_id"], dtype=torch.bfloat16, device_map="cuda")
+        processor = AutoProcessor.from_pretrained(acfg["model_id"])
+
+        def generate(messages: list) -> str:
+            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            images, videos = process_vision_info(messages)
+            inputs = processor(text=[text], images=images, videos=videos,
+                               return_tensors="pt").to("cuda")
+            with torch.inference_mode():
+                out = model.generate(**inputs, max_new_tokens=1024, do_sample=True,
+                                     temperature=0.2, top_p=0.9)
+            trimmed = out[0][inputs["input_ids"].shape[1]:]
+            return processor.decode(trimmed, skip_special_tokens=True)
+
     tags_table = load_post_tags(args.clips_dir)
 
     processed = 0
@@ -93,7 +118,7 @@ def main() -> None:
             ]
             caption, fallback = None, False
             for _ in range(acfg["max_retries"] + 1):
-                result = llm.chat(messages, params)[0].outputs[0].text
+                result = generate(messages)
                 caption = parse_caption_output(result)
                 if caption:
                     break
