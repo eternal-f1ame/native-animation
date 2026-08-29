@@ -20,8 +20,8 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 export HF_HOME="$MODELS_ROOT/hf-cache"
 
 /home/aeternum/anaconda3/envs/anno/bin/python tools/annotate_clips.py \
-  --shots-dir "$WORKSPACE_ROOT/data/sakugabooru/shots" \
-  --clips-dir "$WORKSPACE_ROOT/data/sakugabooru/clips" \
-  --out-dir "$WORKSPACE_ROOT/data/sakugabooru/captions" \
+  --shots-dir "$SAKUGA_ROOT/shots" \
+  --clips-dir "$SAKUGA_ROOT/clips" \
+  --out-dir "$SAKUGA_ROOT/captions" \
   --config configs/stage0.yaml \
   --shard "$SLURM_ARRAY_TASK_ID"

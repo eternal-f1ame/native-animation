@@ -17,7 +17,7 @@ source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 python tools/split_shots.py \
-  --clips-dir "$WORKSPACE_ROOT/data/sakugabooru/clips" \
-  --out-dir "$WORKSPACE_ROOT/data/sakugabooru/shots" \
+  --clips-dir "$SAKUGA_ROOT/clips" \
+  --out-dir "$SAKUGA_ROOT/shots" \
   --config configs/stage0.yaml \
   --shard "$SLURM_ARRAY_TASK_ID" --num-shards 64

@@ -16,7 +16,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-TAR="$WORKSPACE_ROOT/data/sakugabooru/snapshot-2025/train/${SLURM_ARRAY_TASK_ID}.tar"
+TAR="$SAKUGA_ROOT/snapshot-2025/train/${SLURM_ARRAY_TASK_ID}.tar"
 [ -f "$TAR" ] || { echo "no tar ${SLURM_ARRAY_TASK_ID}; nothing to do"; exit 0; }
 
 # Node-local staging: never bloats the quota'd home export.
@@ -26,8 +26,8 @@ trap 'rm -rf "$STAGING"' EXIT
 
 python tools/stream_process_tar.py \
   --tar "$TAR" \
-  --clips-dir "$WORKSPACE_ROOT/data/sakugabooru/clips" \
-  --shots-dir "$WORKSPACE_ROOT/data/sakugabooru/shots" \
+  --clips-dir "$SAKUGA_ROOT/clips" \
+  --shots-dir "$SAKUGA_ROOT/shots" \
   --staging-dir "$STAGING" \
   --config configs/stage0.yaml \
   ${KEEP_TAR:+--keep-tar}
