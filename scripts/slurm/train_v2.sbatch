@@ -21,7 +21,7 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 STAGE_CONFIG=${STAGE_CONFIG:-configs/ct_a.yaml}
 NUM_GPUS=${SLURM_GPUS_ON_NODE:-4}
 echo "stage=$STAGE_CONFIG gpus=$NUM_GPUS host=$(hostname)"
-nvidia-smi | head -10
+nvidia-smi | head -10 || true
 
 "$COMFY_ACCEL" launch \
   --config_file configs/accelerate_fsdp.yaml \
