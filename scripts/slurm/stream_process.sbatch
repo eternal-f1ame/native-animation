@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
 #SBATCH --array=0-280%16
+#SBATCH --requeue
 #SBATCH --export=ALL
 #SBATCH --output=experiments/logs/%x-%A_%a.out
 #SBATCH --error=experiments/logs/%x-%A_%a.err
