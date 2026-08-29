@@ -30,10 +30,24 @@ from extract_snapshot import (  # noqa: E402  (sibling tool module)
     MEMBER_RE,
     VIDEO_EXTS,
     _load_state,
-    _save_state,
     build_sidecar,
     series_dir_from_tags,
 )
+
+
+def _known_ids(clips_dir: Path) -> set[int]:
+    """Union of the scraper's state and every per-tar stream state file.
+
+    Stream tasks run 16-wide; each writes only its own _state_stream_<tar>.json
+    (atomic tmp+replace, unique name) so concurrent tars never race.
+    """
+    known = set(_load_state(clips_dir).get("downloaded_ids", []))
+    for state_file in clips_dir.glob("_state_stream_*.json"):
+        try:
+            known.update(json.loads(state_file.read_text()).get("ids", []))
+        except json.JSONDecodeError:
+            continue
+    return known
 
 
 def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: Path,
@@ -48,8 +62,7 @@ def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: P
     manifests.mkdir(parents=True, exist_ok=True)
     staging_dir.mkdir(parents=True, exist_ok=True)
     scfg, ccfg = cfg["shots"], cfg["curation"]
-    state = _load_state(clips_dir)
-    known = set(state.get("downloaded_ids", []))
+    known = _known_ids(clips_dir)
 
     summary = {"extracted": 0, "shots": 0, "skipped_existing": 0,
                "skipped_explicit": 0, "skipped_no_media": 0, "max_post_id": 0}
@@ -111,8 +124,10 @@ def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: P
             handle.write(json.dumps(record) + "\n")
     manifest_tmp.replace(manifests / f"shard_t{tar_path.stem}.jsonl")
 
-    state["downloaded_ids"] = sorted(set(state.get("downloaded_ids", [])) | new_ids)
-    _save_state(clips_dir, state)
+    stream_state = clips_dir / f"_state_stream_{tar_path.stem}.json"
+    tmp_state = stream_state.with_suffix(".json.tmp")
+    tmp_state.write_text(json.dumps({"ids": sorted(new_ids)}))
+    tmp_state.replace(stream_state)
 
     if not keep_tar:
         tar_path.unlink(missing_ok=True)

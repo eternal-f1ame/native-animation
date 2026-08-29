@@ -83,8 +83,10 @@ def test_stream_process_end_to_end(tmp_path):
     sidecar = json.loads((env["clips"] / "demo_series" / "7001.json").read_text())
     assert "smears" in sidecar["tags"]
 
-    state = json.loads((env["clips"] / "_state.json").read_text())
-    assert 7001 in state["downloaded_ids"]
+    stream_state = json.loads((env["clips"] / "_state_stream_7.json").read_text())
+    assert 7001 in stream_state["ids"]
+    scraper_state = json.loads((env["clips"] / "_state.json").read_text())
+    assert scraper_state["downloaded_ids"] == []   # shared state untouched (race-free)
     assert summary["extracted"] == 1 and summary["skipped_explicit"] == 1
 
     assert not env["tar"].exists()                       # tar deleted by default
