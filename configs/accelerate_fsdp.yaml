@@ -1,0 +1,15 @@
+compute_environment: LOCAL_MACHINE
+distributed_type: FSDP
+mixed_precision: bf16
+num_machines: 1
+num_processes: 4            # raise to 8 when an 8-GPU node is held
+machine_rank: 0
+main_training_function: main
+fsdp_config:
+  fsdp_auto_wrap_policy: TRANSFORMER_BASED_WRAP
+  fsdp_transformer_layer_cls_to_wrap: DiTBlock
+  fsdp_sharding_strategy: FULL_SHARD
+  fsdp_state_dict_type: SHARDED_STATE_DICT
+  fsdp_offload_params: false
+downcast_bf16: 'no'
+use_cpu: false

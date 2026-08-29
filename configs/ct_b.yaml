@@ -1,0 +1,30 @@
+# CT-lite sub-stage B: target resolution/duration, still broad data.
+model:
+  model_id_with_origin_paths: "Wan-AI/Wan2.2-TI2V-5B:diffusion_pytorch_model*.safetensors,Wan-AI/Wan2.2-TI2V-5B:models_t5_umt5-xxl-enc-bf16.pth,Wan-AI/Wan2.2-TI2V-5B:Wan2.2_VAE.pth"
+  trainable_models: dit
+  initialize_on_cpu: true
+data:
+  metadata_csv: ../data/sakugabooru/metadata/v2/metadata_train.csv
+  base_path: ../data/sakugabooru/shots
+  tiers: []
+  height: 480
+  width: 832
+  num_frames: 49
+  repeat: 1
+objective: {alpha: 1.0, lambda0: 0.25, delta_mode: vspace, text_dropout: 0.1, anchor_probs: null}
+density: {m: 0.0, s: 1.0, shift: 3.0, tail_p: 0.05, tail_lo: 0.95}
+curriculum: {enabled: false}
+training:
+  learning_rate: 5.0e-5
+  weight_decay: 0.01
+  warmup_steps: 500
+  total_steps: 20000             # placeholder until smoke measures s/step (Task 9)
+  grad_clip: 1.0
+  ema_decay: 0.995
+  gradient_accumulation_steps: 1
+  save_steps: 2000
+  save_state_steps: 500
+  curriculum_refresh_steps: 200
+  num_workers: 2
+  seed: 0
+  output_path: experiments/checkpoints/ct_b
