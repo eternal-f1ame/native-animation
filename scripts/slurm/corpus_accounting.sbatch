@@ -15,7 +15,7 @@ S="$SAKUGA_ROOT/shots"
 {
 echo "════════ STAGE-0 CORPUS ACCOUNTING $(date) ════════"
 echo "total shot files: $(find "$S" -name '*.mp4' | wc -l)"
-echo "tars done-marked: $(ls "$S/manifests" | grep -c '^\.done_')"
+echo "tars done-marked: $(ls -a "$S/manifests" | grep -c "^\.done_")"
 echo "manifest records: $(cat "$S"/manifests/shard_*.jsonl 2>/dev/null | wc -l)"
 echo "curation pass:    $(cat "$S"/manifests/shard_*.jsonl 2>/dev/null | grep -o '"pass": true' | wc -l)"
 echo "shots size GB:    $(du -s --block-size=1G "$S" | cut -f1)"

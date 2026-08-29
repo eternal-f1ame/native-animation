@@ -15,6 +15,7 @@ REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd
 cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 
-MAX_ID=$(python -c "import json;print(json.load(open('$SAKUGA_ROOT/extraction-summary.json'))['max_post_id'])")
+MAX_STEM=$(ls "$SAKUGA_ROOT/snapshot-2025/train" | sed 's/\.tar$//' | sort -n | tail -1)
+MAX_ID=$(( MAX_STEM * 1000 + 999 ))
 echo "delta scrape from post id $((MAX_ID+1))"
 "$COMFY_PY" tools/scrape_sakugabooru.py --anime "id:$((MAX_ID+1))..400000" --limit 999999 --min-score 0
