@@ -1,8 +1,8 @@
-# Native FM v2 — Technical Foundations (Intake for the Method Overhaul)
+# Native Animation v2 — Technical Foundations (Intake for the Method Overhaul)
 
 **Date:** 2026-08-28 · **Status:** intake complete; design in progress
 **Objective (unchanged):** keyframe → short native-animation clip, on Sakugabooru-derived data.
-**Purpose of this doc:** everything absorbed from the AniMatrix report (model/pretraining/math) and the recent A* literature, organized as a menu of grounded v2 components. The design spec selects from this menu; nothing here is yet a commitment. Companion: `related/animatrix.md` (strategic read + data plan).
+**Purpose of this doc:** everything absorbed from the AniMatrix report (model/pretraining/math) and the recent A* literature, organized as a menu of grounded v2 components (framing: the method is about native animation; flow matching is the substrate). The design spec selects from this menu; nothing here is yet a commitment. Companion: `related/animatrix.md` (strategic read + data plan).
 
 ---
 

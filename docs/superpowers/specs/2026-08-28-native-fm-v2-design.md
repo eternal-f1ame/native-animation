@@ -1,7 +1,8 @@
-# Native FM v2 — Method, Training Program, and Campaign Design
+# Native Animation v2 — Method, Training Program, and Campaign Design
 
 - **Date:** 2026-08-28 · **Status:** Approved in design review (all sections, all flagged calls)
 - **Objective (unchanged):** keyframe → short native-animation clip on Sakugabooru-derived data; CVPR 2027 target (~mid-Nov 2026)
+- **Framing principle (user-set):** this is a *native animation* method. Flow matching is the substrate, not the subject — every core component is defined by the animation failure mode it attacks (keyframe erasure, motion flattening, flicker/mid-clip collapse, physics-prior bleed-through), and each is formulation-agnostic (portable to any denoising-based video generator); we instantiate in flow matching because that is what modern backbones use. Docs, code naming, and the eventual paper lead with the animation problem, never the machinery.
 - **Companions:** `docs/method-v2-foundations.md` (intake: AniMatrix math + literature map, component menu C1–C10), `docs/related/animatrix.md` (strategic read + data plan). This spec selects and freezes the design; the implementation plan derives from it.
 
 ## 0. Settled context
@@ -13,7 +14,11 @@
 
 ## 1. Method specification
 
-### 1.1 Anchored conditional flow matching (C1)
+Each component is stated by its animation purpose first, then its formulation.
+
+### 1.1 Keyframe/storyboard anchoring — the animator's contract (C1)
+
+*Animation purpose:* the given drawing(s) are inviolable; generation continues them. *Formulation:* anchored conditional flow matching.
 
 Clean video latents `z ∈ R^{C×T'×h×w}` (Wan2.2 ST-VAE: 16× spatial, 4× temporal, T' = (T−1)/4+1). Anchor set `A ⊆ {0,…,T'−1}`. Forward noising with `σ` from the density in §1.4:
 
@@ -34,11 +39,15 @@ The network predicts velocity `v̂ = v_θ(z_σ, σ, c_text)`; target `v* = ε �
 
 Text dropout 0.10 (independent) for standard CFG. Inference accepts any anchor pattern → one model serves I2V, first-last interpolation, and sparse-storyboard conditioning. Probabilities are initial design values; the anchor-mode mix is a swept hyperparameter, not a constant of the method.
 
-### 1.2 Motion-aware frame weighting (kept from v1, formalized)
+### 1.2 Motion-aware frame weighting — spend capacity on the motion beats (kept from v1, formalized)
+
+*Animation purpose:* sakuga lives in short bursts of decisive motion amid long holds; supervision should weight the beats, not the holds.
 
 Per-delta motion `m_t = mean|z_t − z_{t−1}|`, per-clip normalized `m̄_t = m_t / max_t m_t`; weights `w_t = 1 + α·m̄_t`, `α = 1.0`, applied with the mean-preserving normalizer (α=0 recovers unweighted MSE exactly — pinned by existing tests). Frame-level weights follow v1's convention (frame t takes the (t−1,t) delta weight; leading unanchored frame takes 1).
 
-### 1.3 σ-corrected temporal-delta consistency (C2)
+### 1.3 Temporal-delta consistency — anti-flicker, anti-collapse (C2)
+
+*Animation purpose:* penalize frame-to-frame jitter and mid-clip breakdown — the failure a viewer notices first — not just per-frame error.
 
 **The v1 flaw, derived:** with `x̂₀ = z_σ − σ·v̂` and `v̂ = v* + e`, the x₀-estimate error is `−σe`, so v1's delta residual `(Δx̂₀ − Δx₀) = −σ·Δe` puts a **σ²** factor on the loss — high-noise timesteps dominate exactly where `x̂₀` is least informative.
 
@@ -52,7 +61,9 @@ whose residual is exactly `Δe` (σ-uniform). Anchor boundaries: the sequence us
 
 **Ablation arms:** (a) v1-legacy x₀-space unweighted (the σ² behavior, as the "before"); (b) `λ(σ) = λ₀(1−σ)^κ`, κ∈{1,2} modulation on the v-space form (emphasizes near-data fidelity). The derivation goes in the paper appendix.
 
-### 1.4 Explicit timestep density (C3)
+### 1.4 Timestep density — protect the keyframe through the noise schedule (C3)
+
+*Animation purpose:* keep training emphasis where line art and identity are decided, instead of the heavy-noise regime that erases the drawing.
 
 Per-**sample** timesteps (fixes v1's one-timestep-per-batch variance): `u ~ LogitNormal(m, s)` mapped through the shift transform `σ = shift·u / (1 + (shift−1)·u)`, plus a 5% uniform floor on σ∈[0.95, 1] (low-SNR coverage). Defaults `m=0, s=1, shift=3` — v1's shift=3 becomes one point in a principled family. Sweep grid (small budget): `m∈{−0.5, 0, +0.5} × s∈{0.75, 1.0} × shift∈{2, 3, 5}`, selected on the Stage-2 validation metric, not FVD.
 
@@ -92,7 +103,7 @@ From ~10–20k held-out-series keyframes: N=4 candidates each (Stage-2 model, va
 
 ## 3. Evaluation program (C10)
 
-- **Baselines:** vanilla Wan2.2-TI2V-5B, AniSora-V3.2 (open weights), Native FM v1 (internal, LoRA), optional CogVideoX-I2V.
+- **Baselines:** vanilla Wan2.2-TI2V-5B, AniSora-V3.2 (open weights), Native Animation v1 (internal, LoRA), optional CogVideoX-I2V.
 - **Benchmarks:** (a) frozen held-out GT benchmark under `data/benchmarks/` (series-disjoint; regenerated once on the new corpus and never touched); (b) **AniSora 948-clip benchmark**; (c) distributional JEDi (V-JEPA features, MMD) on generated-vs-real sets.
 - **Human study (metric validation = contribution):** AniMatrix's 5-dimension protocol (Style Fidelity, Prompt Understanding, Artistic Motion, Structural Stability, Anime Aesthetic), 1–5 scale, 100–200 prompts × 3 raters, Krippendorff's α reported; correlate our automated suite against human scores; reproduce the FVD anti-correlation quantitatively. **Open logistics (user-owned): rater recruitment.**
 - **Ablation grid** (from the Stage-2 checkpoint, one axis at a time): anchor-mode mix; L_Δ form {off, v1-legacy, v-space, (1−σ)^κ}; timestep density grid; curriculum on/off; motion weighting on/off; DPO on/off; C4; C8.

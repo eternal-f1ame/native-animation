@@ -1,12 +1,12 @@
 # Native Animation
 
-Keyframe-conditioned native-animation video generation with Flow Matching.
+Keyframe-conditioned native-animation video generation — teaching video models the motion language of anime. Flow matching is the substrate, not the subject.
 
 Given a single anime keyframe, the model generates a short continuation that preserves the frame's artistic style while producing the stylized, physics-violating motion — smears, impact frames, morphing — that defines high-quality 2D animation. Off-the-shelf video models inherit a photorealism prior from web-scale training data and reliably erase this motion (the *realism trap*); this project attacks that failure directly. The method write-up lives in `docs/method.md`; `paper/` will hold the CVPR 2027 manuscript.
 
 ## Method
 
-Native Animation Flow Matching (Native FM) extends a Wan2.2-TI2V Flow Matching backbone with three coordinated changes, all in `src/native_animation/modeling/native_flowmatch.py`. The architecture is untouched; the contribution is the objective and the noise schedule:
+The method (Native Animation, v1 described here) extends a Wan2.2-TI2V backbone with three coordinated changes, all in `src/native_animation/modeling/native_flowmatch.py`. The architecture is untouched; the contribution is the objective and the noise schedule:
 
 1. **Keyframe-preserving scheduler shift** — `NativeAnimationFlowMatchScheduler` defaults to `shift=3.0` (vs. Wan's ~5), so early timesteps stay closer to the clean signal and the conditioning keyframe survives noising.
 2. **Motion-aware frame weighting** — per-frame loss weights derived from latent frame-to-frame deltas concentrate capacity on motion beats rather than the long static stretches that dominate sakuga clips.
