@@ -145,6 +145,137 @@ def write_csv(path: Path, rows: List[Dict]) -> None:
             writer.writerow({key: row.get(key) for key in fieldnames})
 
 
+def _read_jsonl_shards(directory: Path, key: str = "shot_id") -> Dict[str, Dict]:
+    """Union all shard_*.jsonl files in ``directory`` into a dict keyed by ``key``."""
+    table: Dict[str, Dict] = {}
+    if not directory.exists():
+        return table
+    for shard in sorted(directory.glob("shard_*.jsonl")):
+        with shard.open() as handle:
+            for line in handle:
+                if line.strip():
+                    record = json.loads(line)
+                    table[record[key]] = record
+    return table
+
+
+def build_metadata_v2(
+    clips_dir: Path,
+    shots_dir: Path,
+    profiles_dir: Path,
+    captions_dir: Path,
+    output_dir: Path,
+    seed: int = 42,
+    val_ratio: float = 0.1,
+    test_ratio: float = 0.1,
+    s_quantile: float = 0.95,
+    a_quantile: float = 0.70,
+) -> None:
+    """Stage-0 v2 metadata: join shots + profiles + captions + sidecars.
+
+    Emits shot-level rows (video paths relative to ``shots_dir``) filtered to
+    curation-pass and rating==Safe posts, with quality tier, motion/deformation
+    quantile buckets, and the VLM directive as the training prompt.
+    """
+    from native_animation.data.profiling import assign_quantile_buckets
+    from native_animation.data.tiers import assign_tiers
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Post-level facts from corpus sidecars.
+    posts: Dict[int, Dict] = {}
+    for sidecar in clips_dir.rglob("*.json"):
+        if sidecar.name == "_state.json" or not sidecar.stem.isdigit():
+            continue
+        try:
+            info = json.loads(sidecar.read_text())
+        except json.JSONDecodeError:
+            continue
+        posts[int(sidecar.stem)] = info
+    tiers = assign_tiers(
+        [{"post_id": pid, "score": int(p.get("score", 0) or 0),
+          "favorite_count": int(p.get("favorite_count", 0) or 0)} for pid, p in posts.items()],
+        s_quantile=s_quantile, a_quantile=a_quantile,
+    )
+
+    shots = _read_jsonl_shards(shots_dir / "manifests")
+    profiles = _read_jsonl_shards(profiles_dir)
+    captions = _read_jsonl_shards(captions_dir)
+
+    joined = []
+    for shot_id, shot in shots.items():
+        post = posts.get(shot["post_id"])
+        if post is None or not shot["curation"]["pass"]:
+            continue
+        rating = str(post.get("rating") or "Safe")
+        if not rating.lower().startswith("s"):
+            continue
+        profile = profiles.get(shot_id)
+        if profile is None:
+            continue
+        caption = captions.get(shot_id)
+        joined.append((shot, post, profile, caption))
+
+    q = 4
+    q_motion = assign_quantile_buckets([p["flow_energy"] for _, _, p, _ in joined], q) if joined else []
+    q_deform = assign_quantile_buckets([p["nonrigid_residual"] for _, _, p, _ in joined], q) if joined else []
+
+    split_map = build_series_split((s["series"] for s, _, _, _ in joined), val_ratio, test_ratio, seed)
+
+    rows: List[Dict] = []
+    for idx, (shot, post, profile, caption) in enumerate(joined):
+        tags = post.get("tags", "")
+        if caption is not None:
+            prompt, summary, fallback = caption["description"], caption["summary"], caption.get("fallback", False)
+        else:
+            prompt = f"native animation, anime, {shot['series']}, " + ", ".join(tags.split()[:12])
+            summary, fallback = "", True
+        rows.append({
+            "video": shot["video"],
+            "prompt": prompt,
+            "summary": summary,
+            "series": shot["series"],
+            "post_id": shot["post_id"],
+            "shot_id": shot["shot_id"],
+            "tier": tiers.get(shot["post_id"], "B"),
+            "q_motion": q_motion[idx],
+            "q_deform": q_deform[idx],
+            "fps": shot.get("fps", 24.0),
+            "score": int(post.get("score", 0) or 0),
+            "rating": post.get("rating", "Safe"),
+            "tags": tags,
+            "fallback_caption": fallback,
+            "split": split_map[shot["series"]],
+        })
+
+    fieldnames = ["video", "prompt", "summary", "series", "post_id", "shot_id", "tier",
+                  "q_motion", "q_deform", "fps", "score", "rating", "tags",
+                  "fallback_caption", "split"]
+
+    def write(path: Path, subset: List[Dict]) -> None:
+        with path.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in subset:
+                writer.writerow(row)
+
+    write(output_dir / "metadata_all.csv", rows)
+    for split in ("train", "val", "test"):
+        write(output_dir / f"metadata_{split}.csv", [r for r in rows if r["split"] == split])
+
+    summary_payload = {
+        "num_rows": len(rows),
+        "num_train": sum(1 for r in rows if r["split"] == "train"),
+        "num_val": sum(1 for r in rows if r["split"] == "val"),
+        "num_test": sum(1 for r in rows if r["split"] == "test"),
+        "num_series": len({r["series"] for r in rows}),
+        "tier_counts": {t: sum(1 for r in rows if r["tier"] == t) for t in "SAB"},
+        "fallback_caption_rate": (sum(1 for r in rows if r["fallback_caption"]) / len(rows)) if rows else 0.0,
+    }
+    with (output_dir / "summary.json").open("w") as handle:
+        json.dump(summary_payload, handle, indent=2)
+
+
 def main() -> None:
     args = parse_args()
     input_root = args.input_root.resolve()
