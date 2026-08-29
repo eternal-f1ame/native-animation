@@ -24,7 +24,7 @@ training:
   ema_decay: 0.995
   gradient_accumulation_steps: 1
   save_steps: 1000
-  save_state_steps: 2
+  save_state_steps: 9999
   curriculum_refresh_steps: 200
   num_workers: 2
   seed: 0

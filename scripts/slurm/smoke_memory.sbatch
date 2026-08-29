@@ -18,7 +18,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-echo "host=$(hostname)"; nvidia-smi | head -12
+echo "host=$(hostname)"; nvidia-smi | head -12 || true
 
 accelerate launch \
   --config_file configs/accelerate_fsdp.yaml \
