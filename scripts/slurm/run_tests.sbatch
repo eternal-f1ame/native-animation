@@ -12,4 +12,5 @@ set -uo pipefail
 REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 cd "$REPO_ROOT"
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUTF8=1
+export DIFFSYNTH_ATTENTION_IMPLEMENTATION=torch   # tests are CPU-runnable
 /home/aeternum/anaconda3/envs/comfy/bin/python -m pytest ${TEST_TARGETS:-tests} -q
