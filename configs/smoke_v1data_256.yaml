@@ -1,0 +1,38 @@
+# Smoke-gate config: ct_b settings pointed at the PRE-Stage-0 corpus
+# (v1 metadata + raw clips) so memory/e2e gates can run before shots exist.
+model:
+  model_paths:
+    - ["/home/aeternum/Research/Comic/Cartoon/models/Wan-AI/Wan2.2-TI2V-5B/diffusion_pytorch_model-00001-of-00003.safetensors",
+       "/home/aeternum/Research/Comic/Cartoon/models/Wan-AI/Wan2.2-TI2V-5B/diffusion_pytorch_model-00002-of-00003.safetensors",
+       "/home/aeternum/Research/Comic/Cartoon/models/Wan-AI/Wan2.2-TI2V-5B/diffusion_pytorch_model-00003-of-00003.safetensors"]
+    - "/home/aeternum/Research/Comic/Cartoon/models/DiffSynth-Studio/Wan-Series-Converted-Safetensors/models_t5_umt5-xxl-enc-bf16.safetensors"
+    - "/home/aeternum/Research/Comic/Cartoon/models/DiffSynth-Studio/Wan-Series-Converted-Safetensors/Wan2.2_VAE.safetensors"
+  tokenizer_path: "/home/aeternum/Research/Comic/Cartoon/models/Wan-AI/Wan2.1-T2V-1.3B/google/umt5-xxl"
+  trainable_models: dit
+  initialize_on_cpu: true
+  gradient_checkpointing_offload: true
+data:
+  metadata_csv: ../data/sakugabooru/metadata/metadata_train.csv
+  base_path: ../data/sakugabooru/clips
+  tiers: []
+  height: 256
+  width: 448
+  num_frames: 17
+  repeat: 1
+objective: {alpha: 1.0, lambda0: 0.25, delta_mode: vspace, text_dropout: 0.1, anchor_probs: null}
+density: {m: 0.0, s: 1.0, shift: 3.0, tail_p: 0.05, tail_lo: 0.95}
+curriculum: {enabled: false}
+training:
+  learning_rate: 5.0e-5
+  weight_decay: 0.01
+  warmup_steps: 1
+  total_steps: 3
+  grad_clip: 1.0
+  ema_decay: 0.995
+  gradient_accumulation_steps: 1
+  save_steps: 1000
+  save_state_steps: 9999
+  curriculum_refresh_steps: 200
+  num_workers: 2
+  seed: 0
+  output_path: experiments/smoke/train_state_256

@@ -76,6 +76,9 @@ def train_loop(accelerator, model, dataset, model_logger, config: dict,
     model.to(device=accelerator.device)
     model, optimizer, dataloader, scheduler = accelerator.prepare(
         model, optimizer, dataloader, scheduler)
+    accelerator.print(f"[runner] wrapped model type: {type(model).__name__}")
+    fsdp_children = sum(1 for m in model.modules() if "FullyShard" in type(m).__name__)
+    accelerator.print(f"[runner] FSDP-wrapped submodules: {fsdp_children}")
 
     state_root = Path(config["output_path"]) / "state"
     log_path = Path(config["output_path"]) / "train_log.jsonl"
