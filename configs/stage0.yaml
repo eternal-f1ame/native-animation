@@ -1,0 +1,19 @@
+# Stage-0 pipeline knobs (single source; every Stage-0 CLI reads this).
+shots:
+  min_seconds: 2.2
+  max_seconds: 10.0
+  detector_threshold: 27.0        # PySceneDetect ContentDetector default region
+  reencode: {crf: 16, short_side_max: 480, pix_fmt: yuv420p}
+curation:
+  min_mean_framediff: 1.0         # static-clip floor (uint8 mean abs diff, 256px)
+  min_laplacian_var: 20.0         # blur floor, audited on real shards in Task 6
+profiling:
+  frame_pairs: 8                  # sampled pairs per shot
+  flow_size: 256                  # short side for Farneback
+  quantiles: 4                    # Q buckets for q_m / q_d
+annotation:
+  model_id: Qwen/Qwen3-VL-8B-Instruct   # confirm in Task 2; update if different
+  frames_per_shot: 8
+  max_retries: 2
+  shards: 64                      # SLURM array width
+tiers: {s_quantile: 0.95, a_quantile: 0.70}   # by post score; favorites tiebreak
