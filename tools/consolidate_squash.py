@@ -33,8 +33,10 @@ def save_state(state_path: Path, state: dict) -> None:
 
 
 def mksquashfs_append(staging: Path, sqsh: Path) -> None:
+    # -no-compression: members are already-compressed mp4s; squashfs gzip over
+    # ~300G would burn hours of CPU for ~zero size gain.
     cmd = ["mksquashfs", str(staging), str(sqsh),
-           "-no-progress", "-processors", "4", "-noappend"]
+           "-no-progress", "-processors", "4", "-no-compression", "-noappend"]
     if sqsh.exists():
         cmd.remove("-noappend")  # append mode: merge staging into existing image
     subprocess.run(cmd, check=True, capture_output=True, text=True)
