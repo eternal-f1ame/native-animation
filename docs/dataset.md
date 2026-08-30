@@ -31,3 +31,32 @@ Built by `python -m native_animation.data.build_metadata` (or `scripts/slurm/bui
 - **More clips:** `tools/scrape_sakugabooru.py` (resumable via `_state.json`, dedupes by post id; needs `cf_cookies.json` from `tools/extract_cf_cookies.py`). Rebuild metadata afterward.
 - **Windowed pairs:** `tools/build_pair_dataset.py` slides a window over each clip and emits keyframe JPG + short MP4 + `manifest.jsonl` into `pairs/`. Stride controls volume: 0.1 s ≈ 4.3M pairs / 1.7 TB; 0.5 s ≈ 860k / 340 GB; 1.0 s ≈ 430k / 170 GB (non-overlapping).
 - **Benchmarks:** frozen evaluation sets belong in `<workspace>/data/benchmarks/` (reserved).
+
+## Object-lean storage (Stage-0 shots)
+
+The datasets filesystem enforces a per-user **object quota (2M files)** that a
+600k-shot corpus of loose files would blow through. Shot storage is therefore
+tiered; each tier trades objects for one level of indirection:
+
+1. **Producers pack.** `stream_process_tar.py --pack-shots` and
+   `split_shots.py --pack-shots` write shots to node-local staging, then emit
+   ONE tar per work unit — `shots/packs/shots_t<tar-stem>.tar` (streamer) /
+   `shots_b<shard>.tar` (splitter) — plus one sidecar JSONL per source tar
+   under `clips/sidecars/`. ~4 shared-FS objects per ~1,200-file work unit.
+   Manifest records carry `"pack": "packs/<name>.tar"`.
+2. **Consolidator squashes.** `consolidate_squash.py` (single-writer,
+   `consolidate_squash.sbatch`, never an array) incrementally appends batches
+   of pack tars into **`shots/shots.sqsh`** via node-local extract +
+   `mksquashfs`, verifies membership with `unsquashfs -l`, records each pack
+   in `shots/_state_squash.json`, and only then deletes it. Net: N packs → 1
+   image. Safe to kill and rerun at any point.
+3. **Readers materialize.** All consumers go through
+   `native_animation.data.shot_access.materialize_shot`: loose file first
+   (checked under the shots root and any `NA_SHOTS_EXTRA_ROOTS`), then pack-tar
+   extraction to local tmp. GPU/reader jobs source
+   `scripts/slurm/lib/mount_shots.sh` after `paths.env`; it squashfuse-mounts
+   `shots.sqsh` node-locally and exports `NA_SHOTS_EXTRA_ROOTS`, so squashed
+   shots resolve as ordinary loose files. No root, no admin — user-space FUSE.
+
+Metadata (`build_metadata_v2`) and annotation read post tags from both loose
+per-post JSONs and the packed `clips/sidecars/sidecars_*.jsonl`.
