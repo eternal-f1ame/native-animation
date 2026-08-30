@@ -102,3 +102,31 @@ def test_stream_process_keep_tar_and_idempotent(tmp_path):
     again = process_tar(env["tar"], env["clips"], env["shots"], env["staging"], CFG,
                         keep_tar=True)
     assert first["extracted"] == 1 and again.get("skipped_done") is True
+
+
+def test_stream_process_pack_mode(tmp_path):
+    env = _make_env(tmp_path)
+    summary = process_tar(env["tar"], env["clips"], env["shots"], env["staging"], CFG,
+                          keep_tar=True, pack_shots=True)
+    assert summary["extracted"] == 1
+
+    # No loose shot files or per-post sidecar JSONs on shared storage.
+    assert not (env["shots"] / "demo_series").exists()
+    assert not (env["clips"] / "demo_series" / "7001.json").exists()
+
+    # One pack tar containing the shot at its series-relative path.
+    pack = env["shots"] / "packs" / "shots_t7.tar"
+    assert pack.exists()
+    with tarfile.open(pack) as t:
+        names = [n.lstrip("./") for n in t.getnames()]
+        assert "demo_series/7001_00.mp4" in names
+
+    # One sidecar JSONL carrying the tags.
+    lines = (env["clips"] / "sidecars" / "sidecars_t7.jsonl").read_text().splitlines()
+    records = [json.loads(l) for l in lines]
+    assert records[0]["id"] == 7001 and "smears" in records[0]["tags"]
+
+    # Manifest records point at the pack.
+    manifest = env["shots"] / "manifests" / "shard_t7.jsonl"
+    rec = json.loads(manifest.read_text().splitlines()[0])
+    assert rec["pack"] == "packs/shots_t7.tar"

@@ -20,6 +20,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from native_animation.data.shot_access import materialize_shot  # noqa: E402
 from native_animation.data.captions import (  # noqa: E402
     CAPTION_SYSTEM_PROMPT,
     build_caption_request,
@@ -39,6 +40,12 @@ def load_post_tags(clips_dir: Path) -> dict[int, tuple[str, str]]:
         except json.JSONDecodeError:
             continue
         table[int(sidecar.stem)] = (data.get("tags", ""), sidecar.parent.name)
+    for jsonl in sorted((clips_dir / "sidecars").glob("sidecars_*.jsonl")) if (clips_dir / "sidecars").exists() else []:
+        with jsonl.open() as handle:
+            for line in handle:
+                if line.strip():
+                    data = json.loads(line)
+                    table[int(data["id"])] = (data.get("tags", ""), data.get("series", "_other"))
     return table
 
 
@@ -108,7 +115,10 @@ def main() -> None:
             if args.limit is not None and processed >= args.limit:
                 break
             tags, series = tags_table.get(rec["post_id"], ("", rec["series"]))
-            video_path = str(args.shots_dir / rec["video"])
+            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_anno_tmp"))
+            if local is None:
+                continue
+            video_path = str(local)
             messages = [
                 {"role": "system", "content": CAPTION_SYSTEM_PROMPT},
                 {"role": "user", "content": [
@@ -127,6 +137,8 @@ def main() -> None:
             out.write(json.dumps({"shot_id": rec["shot_id"], **caption, "fallback": fallback}) + "\n")
             out.flush()
             processed += 1
+            if is_temp:
+                local.unlink(missing_ok=True)
     print(f"[shard {args.shard}] annotated {processed} shots")
 
 

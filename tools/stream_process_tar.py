@@ -51,7 +51,8 @@ def _known_ids(clips_dir: Path) -> set[int]:
 
 
 def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: Path,
-                cfg: dict, include_explicit: bool = False, keep_tar: bool = False) -> dict:
+                cfg: dict, include_explicit: bool = False, keep_tar: bool = False,
+                pack_shots: bool = False) -> dict:
     tar_path, clips_dir = Path(tar_path), Path(clips_dir)
     shots_dir, staging_dir = Path(shots_dir), Path(staging_dir)
     manifests = shots_dir / "manifests"
@@ -61,12 +62,18 @@ def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: P
 
     manifests.mkdir(parents=True, exist_ok=True)
     staging_dir.mkdir(parents=True, exist_ok=True)
+    # Pack mode (object-quota-lean): shots land in local staging, then one tar
+    # per source-tar on shared storage; sidecars become one JSONL per tar.
+    effective_shots_dir = (staging_dir / "shots_out") if pack_shots else shots_dir
+    effective_shots_dir.mkdir(parents=True, exist_ok=True)
+    pack_rel = f"packs/shots_t{tar_path.stem}.tar"
     scfg, ccfg = cfg["shots"], cfg["curation"]
     known = _known_ids(clips_dir)
 
     summary = {"extracted": 0, "shots": 0, "skipped_existing": 0,
                "skipped_explicit": 0, "skipped_no_media": 0, "max_post_id": 0}
     records_all: list[dict] = []
+    sidecar_records: list[dict] = []
     new_ids: set[int] = set()
 
     with tarfile.open(tar_path) as tar:
@@ -101,22 +108,44 @@ def process_tar(tar_path: Path, clips_dir: Path, shots_dir: Path, staging_dir: P
                 continue
 
             series = series_dir_from_tags(post.get("tags", {}) or {})
-            sidecar_path = clips_dir / series / f"{pid}.json"
-            sidecar_path.parent.mkdir(parents=True, exist_ok=True)
-            if not sidecar_path.exists():
-                sidecar_path.write_text(json.dumps(build_sidecar(post)))
+            if pack_shots:
+                sidecar_records.append({**build_sidecar(post), "series": series})
+            else:
+                sidecar_path = clips_dir / series / f"{pid}.json"
+                sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+                if not sidecar_path.exists():
+                    sidecar_path.write_text(json.dumps(build_sidecar(post)))
 
             ext, media_member = video
             staged = staging_dir / f"{pid}.{ext}"
             with tar.extractfile(media_member) as src, staged.open("wb") as out:
                 shutil.copyfileobj(src, out)
-            records = split_video_into_shots(staged, pid, series, shots_dir, scfg, ccfg)
+            records = split_video_into_shots(staged, pid, series, effective_shots_dir, scfg, ccfg)
             staged.unlink(missing_ok=True)
+            if pack_shots:
+                for record in records:
+                    record["pack"] = pack_rel
 
             records_all.extend(records)
             summary["extracted"] += 1
             summary["shots"] += len(records)
             new_ids.add(pid)
+
+    if pack_shots:
+        packs_dir = shots_dir / "packs"
+        packs_dir.mkdir(parents=True, exist_ok=True)
+        pack_tmp = packs_dir / f"shots_t{tar_path.stem}.tar.tmp"
+        with tarfile.open(pack_tmp, "w") as pack:
+            pack.add(effective_shots_dir, arcname=".")
+        pack_tmp.replace(shots_dir / pack_rel)
+        sidecars_dir = clips_dir / "sidecars"
+        sidecars_dir.mkdir(parents=True, exist_ok=True)
+        side_tmp = sidecars_dir / f"sidecars_t{tar_path.stem}.jsonl.tmp"
+        with side_tmp.open("w") as handle:
+            for record in sidecar_records:
+                handle.write(json.dumps(record) + "\n")
+        side_tmp.replace(sidecars_dir / f"sidecars_t{tar_path.stem}.jsonl")
+        shutil.rmtree(effective_shots_dir, ignore_errors=True)
 
     manifest_tmp = manifests / f"shard_t{tar_path.stem}.jsonl.tmp"
     with manifest_tmp.open("w") as handle:
@@ -145,12 +174,14 @@ def main() -> None:
     parser.add_argument("--include-explicit", action="store_true")
     parser.add_argument("--keep-tar", action="store_true",
                         help="Pilot mode: process but do not delete the tar.")
+    parser.add_argument("--pack-shots", action="store_true",
+                        help="Object-lean mode: shots into one tar, sidecars into one JSONL.")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text())
     summary = process_tar(args.tar, args.clips_dir, args.shots_dir, args.staging_dir,
                           cfg, include_explicit=args.include_explicit,
-                          keep_tar=args.keep_tar)
+                          keep_tar=args.keep_tar, pack_shots=args.pack_shots)
     print(json.dumps({"tar": args.tar.name, **summary}))
 
 

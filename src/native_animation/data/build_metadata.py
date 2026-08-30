@@ -182,7 +182,7 @@ def build_metadata_v2(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Post-level facts from corpus sidecars.
+    # Post-level facts from corpus sidecars (per-post JSONs and per-tar JSONLs).
     posts: Dict[int, Dict] = {}
     for sidecar in clips_dir.rglob("*.json"):
         if sidecar.name == "_state.json" or not sidecar.stem.isdigit():
@@ -192,6 +192,14 @@ def build_metadata_v2(
         except json.JSONDecodeError:
             continue
         posts[int(sidecar.stem)] = info
+    sidecars_dir = clips_dir / "sidecars"
+    if sidecars_dir.exists():
+        for jsonl in sorted(sidecars_dir.glob("sidecars_*.jsonl")):
+            with jsonl.open() as handle:
+                for line in handle:
+                    if line.strip():
+                        info = json.loads(line)
+                        posts[int(info["id"])] = info
     tiers = assign_tiers(
         [{"post_id": pid, "score": int(p.get("score", 0) or 0),
           "favorite_count": int(p.get("favorite_count", 0) or 0)} for pid, p in posts.items()],

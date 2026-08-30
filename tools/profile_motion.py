@@ -18,6 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from native_animation.data.profiling import flow_energy, nonrigid_residual  # noqa: E402
+from native_animation.data.shot_access import materialize_shot  # noqa: E402
 
 
 def pairs_from(path: Path, n_pairs: int, short_side: int):
@@ -70,8 +71,11 @@ def main() -> None:
                 continue
             if rec["shot_id"] in done or not rec["curation"]["pass"]:
                 continue
+            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_profile_tmp"))
+            if local is None:
+                continue
             energies, residuals = [], []
-            for prev, nxt in pairs_from(args.shots_dir / rec["video"],
+            for prev, nxt in pairs_from(local,
                                         pcfg["frame_pairs"], pcfg["flow_size"]):
                 flow = cv2.calcOpticalFlowFarneback(prev, nxt, None, 0.5, 3, 15, 3, 5, 1.2, 0)
                 energies.append(flow_energy(flow))
@@ -82,6 +86,8 @@ def main() -> None:
                                       "nonrigid_residual": float(np.mean(residuals))}) + "\n")
                 out.flush()
                 processed += 1
+            if is_temp:
+                local.unlink(missing_ok=True)
     print(f"[shard {args.shard}] profiled {processed} shots")
 
 

@@ -31,4 +31,5 @@ python tools/stream_process_tar.py \
   --shots-dir "$SAKUGA_ROOT/shots" \
   --staging-dir "$STAGING" \
   --config configs/stage0.yaml \
-  ${KEEP_TAR:+--keep-tar}
+  ${KEEP_TAR:+--keep-tar} \
+  --pack-shots

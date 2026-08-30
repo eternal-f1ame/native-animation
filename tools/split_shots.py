@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
+import tarfile
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -26,10 +29,20 @@ def main() -> None:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--shard", type=int, required=True)
     parser.add_argument("--num-shards", type=int, required=True)
+    parser.add_argument("--pack-shots", action="store_true",
+                        help="Object-lean: shots into one per-shard tar via local staging.")
+    parser.add_argument("--staging-dir", type=Path, default=None)
     args = parser.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text())
     scfg, ccfg = cfg["shots"], cfg["curation"]
+    pack_rel = f"packs/shots_b{args.shard:04d}.tar"
+    if args.pack_shots:
+        staging = Path(args.staging_dir or tempfile.mkdtemp(prefix="na_split_"))
+        effective_out = staging / "shots_out"
+        effective_out.mkdir(parents=True, exist_ok=True)
+    else:
+        effective_out = args.out_dir
     manifest_path = args.out_dir / "manifests" / f"shard_{args.shard:04d}.jsonl"
     done_ids = set()
     if manifest_path.exists():
@@ -48,9 +61,21 @@ def main() -> None:
         if not videos:
             continue
         records = split_video_into_shots(videos[0], post_id, sidecar.parent.name,
-                                         args.out_dir, scfg, ccfg, done_ids)
+                                         effective_out, scfg, ccfg, done_ids)
+        if args.pack_shots:
+            for record in records:
+                record["pack"] = pack_rel
         append_manifest(manifest_path, records)
         processed += len(records)
+    if args.pack_shots and processed:
+        packs_dir = args.out_dir / "packs"
+        packs_dir.mkdir(parents=True, exist_ok=True)
+        pack_path = args.out_dir / pack_rel
+        mode = "a" if pack_path.exists() else "w"
+        with tarfile.open(pack_path, mode) as pack:
+            for series_dir in sorted(effective_out.iterdir()):
+                pack.add(series_dir, arcname=f"./{series_dir.name}")
+        shutil.rmtree(effective_out, ignore_errors=True)
     print(f"[shard {args.shard}] wrote {processed} new shots")
 
 

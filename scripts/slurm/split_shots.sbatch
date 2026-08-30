@@ -21,4 +21,5 @@ export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
   --clips-dir "$SAKUGA_ROOT/clips" \
   --out-dir "$SAKUGA_ROOT/shots" \
   --config configs/stage0.yaml \
-  --shard "$SLURM_ARRAY_TASK_ID" --num-shards 64
+  --shard "$SLURM_ARRAY_TASK_ID" --num-shards 64 \
+  --pack-shots --staging-dir "$STAGING"
