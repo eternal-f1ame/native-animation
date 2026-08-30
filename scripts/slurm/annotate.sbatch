@@ -19,10 +19,12 @@ source "$REPO_ROOT/configs/paths.env"
 source "$REPO_ROOT/scripts/slurm/lib/mount_shots.sh"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 export HF_HOME="$MODELS_ROOT/hf-cache"
+export PYTHONPATH="$MODELS_ROOT/anno-overlay:$PYTHONPATH"
 
-/home/aeternum/anaconda3/envs/anno/bin/python tools/annotate_clips.py \
+"$COMFY_PY" tools/annotate_clips.py \
   --shots-dir "$SAKUGA_ROOT/shots" \
   --clips-dir "$SAKUGA_ROOT/clips" \
   --out-dir "$SAKUGA_ROOT/captions" \
   --config configs/stage0.yaml \
-  --shard "$SLURM_ARRAY_TASK_ID"
+  --shard "$SLURM_ARRAY_TASK_ID" \
+  --backend transformers
