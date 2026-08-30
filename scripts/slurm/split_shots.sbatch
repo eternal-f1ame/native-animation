@@ -17,6 +17,10 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
+STAGING="${SLURM_TMPDIR:-/tmp}/na-split-${SLURM_JOB_ID:-$$}-${SLURM_ARRAY_TASK_ID:-0}"
+mkdir -p "$STAGING"
+trap 'rm -rf "$STAGING"' EXIT
+
 "$COMFY_PY" tools/split_shots.py \
   --clips-dir "$SAKUGA_ROOT/clips" \
   --out-dir "$SAKUGA_ROOT/shots" \

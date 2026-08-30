@@ -16,6 +16,7 @@ set -euo pipefail
 REPO_ROOT=${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}
 cd "$REPO_ROOT"
 source "$REPO_ROOT/configs/paths.env"
+source "$REPO_ROOT/scripts/slurm/lib/mount_shots.sh"
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 export HF_HOME="$MODELS_ROOT/hf-cache"
 

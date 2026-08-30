@@ -10,15 +10,18 @@ import tarfile
 from pathlib import Path
 
 
-def materialize_shot(record: dict, shots_dir: Path, tmp_dir: Path) -> tuple[Path | None, bool]:
+def materialize_shot(record: dict, shots_dir: Path, tmp_dir: Path,
+                     extra_roots: tuple[Path, ...] = ()) -> tuple[Path | None, bool]:
     """Return (local_path, is_temp) for a manifest record's video, or (None, False).
 
-    Loose file wins; otherwise the shot is extracted from its pack tar into
-    ``tmp_dir``. Callers unlink the returned path when ``is_temp`` is True.
+    Loose file wins (checked under ``shots_dir`` then each of ``extra_roots`` —
+    e.g. a squashfuse mountpoint of shots.sqsh); otherwise the shot is extracted
+    from its pack tar into ``tmp_dir``. Callers unlink temps (``is_temp`` True).
     """
-    loose = shots_dir / record["video"]
-    if loose.exists():
-        return loose, False
+    for root in (shots_dir, *extra_roots):
+        loose = root / record["video"]
+        if loose.exists():
+            return loose, False
     pack_rel = record.get("pack")
     if not pack_rel:
         return None, False

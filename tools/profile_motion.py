@@ -7,6 +7,7 @@ profile shard with the same sharding; idempotent by shot_id.
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import zlib
 import sys
@@ -17,6 +18,7 @@ import numpy as np
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+EXTRA_ROOTS = tuple(Path(r) for r in os.environ.get("NA_SHOTS_EXTRA_ROOTS", "").split(":") if r)
 from native_animation.data.profiling import flow_energy, nonrigid_residual  # noqa: E402
 from native_animation.data.shot_access import materialize_shot  # noqa: E402
 
@@ -71,7 +73,7 @@ def main() -> None:
                 continue
             if rec["shot_id"] in done or not rec["curation"]["pass"]:
                 continue
-            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_profile_tmp"))
+            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_profile_tmp"), extra_roots=EXTRA_ROOTS)
             if local is None:
                 continue
             energies, residuals = [], []

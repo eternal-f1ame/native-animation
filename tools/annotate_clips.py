@@ -12,6 +12,7 @@ the same messages, and model.generate(max_new_tokens=1024).
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import zlib
 import sys
@@ -20,6 +21,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+EXTRA_ROOTS = tuple(Path(r) for r in os.environ.get("NA_SHOTS_EXTRA_ROOTS", "").split(":") if r)
 from native_animation.data.shot_access import materialize_shot  # noqa: E402
 from native_animation.data.captions import (  # noqa: E402
     CAPTION_SYSTEM_PROMPT,
@@ -115,7 +117,7 @@ def main() -> None:
             if args.limit is not None and processed >= args.limit:
                 break
             tags, series = tags_table.get(rec["post_id"], ("", rec["series"]))
-            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_anno_tmp"))
+            local, is_temp = materialize_shot(rec, args.shots_dir, Path("/tmp/na_anno_tmp"), extra_roots=EXTRA_ROOTS)
             if local is None:
                 continue
             video_path = str(local)
