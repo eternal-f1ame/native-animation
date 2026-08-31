@@ -1,5 +1,7 @@
 # Method + Training v2 Implementation Plan (v2 Plan 2 of 3)
 
+> **Status (2026-08-30): CODE COMPLETE** — all modules TDD'd green (~85 tests); FSDP + memory smokes done (256px fits 4×80GB; 480p needs the CT-b levers). **Pending:** CT-a launch once Stage-0 data lands.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement the Native Animation v2 method (anchored conditioning, v2 objectives, timestep density, curriculum) and the CT/SFT training program with a resumable multi-GPU runner, anchored inference, and smoke gates — ready to launch the moment Stage-0 data lands.

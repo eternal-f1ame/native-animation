@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Qwen3-VL shot annotation: structured caption + three-section directive.
 
-Runs under the `anno` env (see configs/anno-env.md). Sharded + idempotent like
-the other Stage-0 CLIs.
+Runs in the `comfy` env with PYTHONPATH=$MODELS_ROOT/anno-overlay (there is no
+dedicated env). Sharded + idempotent like the other Stage-0 CLIs.
 
 Transformers fallback (if vLLM is unavailable on this CUDA): replace the vLLM
 block with AutoModelForImageTextToText.from_pretrained(model_id,

@@ -1,5 +1,7 @@
 # Stage-0 Data Pipeline Implementation Plan (v2 Plan 1 of 3)
 
+> **Status (2026-08-30): EXECUTED with amendments** — object-lean pack/squash redesign (see `docs/dataset.md`), annotation validated (Qwen3-VL, ~8s/shot). Corpus run in flight. **Pending:** T11–T12 (v2 metadata rebuild + benchmark freeze) once the corpus lands; delta scrape held for packed output.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the merged ~180k-post corpus into training-ready data for Native Animation v2: single-shot clips, curation verdicts, motion profiles, Qwen3-VL directives, quality tiers, v2 metadata, and a frozen benchmark.

@@ -1,5 +1,7 @@
 # Evaluation Suite + GT-Anchored Preference Implementation Plan (v2 Plan 3 of 3)
 
+> **Status (2026-08-30): NOT STARTED.** Next major implementation block after Stage-0.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the v2 evaluation program (GT-anchored suite + JEDi distributional metric + benchmark/baseline runners + human-study tooling) and the GT-anchored preference stage (pair construction + Diffusion-DPO on a LoRA), completing spec §2 Stage 3 and §3.

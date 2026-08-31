@@ -1,5 +1,7 @@
 # Workspace Restructure Implementation Plan
 
+> **Status (2026-08-30): EXECUTED** 2026-08-28. Historical record.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Migrate the `~/Research/Comic/Cartoon/` workspace from its course-project layout into the CVPR 2027 `native-animation` research codebase: one canonical repo, clean workspace geography, tests, and no course identity anywhere.

@@ -6,13 +6,15 @@ Given a single anime keyframe, the model generates a short continuation that pre
 
 ## Method
 
-The method (Native Animation, v1 described here) extends a Wan2.2-TI2V backbone with three coordinated changes, all in `src/native_animation/modeling/native_flowmatch.py`. The architecture is untouched; the contribution is the objective and the noise schedule:
+The method (v2) trains a Wan2.2-TI2V-5B backbone — vanilla weights, our own continued training — with a project-owned objective spine; the architecture is untouched:
 
-1. **Keyframe-preserving scheduler shift** — `NativeAnimationFlowMatchScheduler` defaults to `shift=3.0` (vs. Wan's ~5), so early timesteps stay closer to the clean signal and the conditioning keyframe survives noising.
-2. **Motion-aware frame weighting** — per-frame loss weights derived from latent frame-to-frame deltas concentrate capacity on motion beats rather than the long static stretches that dominate sakuga clips.
-3. **Latent temporal-difference consistency** — the predicted clean sequence's frame deltas are regressed onto the ground-truth deltas, penalizing flicker and mid-clip collapse that velocity-only losses ignore.
+1. **Anchored conditional flow matching** — a sampled anchor set (keyframe / first+last / storyboard / none) is clamped clean and run at t=0 through TI2V's separated-timestep path; the flow-matching loss covers only non-anchor frames. The clamp *is* the anchor's supervision.
+2. **σ-corrected temporal delta in v-space** — frame-to-frame consistency regressed where the x̂₀-space version provably degenerates (its error scales as −σe), with anchor substitution inside the delta.
+3. **Motion-aware frame weighting** — mean-preserving weights from normalized latent deltas concentrate capacity on motion beats over the static stretches that dominate sakuga clips.
+4. **Timestep density + curriculum** — a shifted logit-normal σ-sampler with a reserved 5% high-noise tail, and a difficulty/rebalance curriculum over the corpus tiers.
+5. **GT-anchored DPO** (post-SFT) — preference pairs anchored on ground-truth frames.
 
-The keyframe latents are clamped clean during noising and excluded from the loss so the anchor stays pinned. Details: `docs/method.md`.
+Modules live in `src/native_animation/modeling/` and `src/native_animation/training/`; anchored inference in `src/native_animation/inference/anchored.py`. The course-era v1 objective (`modeling/native_flowmatch.py`, shift-3 + motion weighting + x̂₀ delta) is retained as a baseline/ablation arm. Long-form: `docs/method.md`, `docs/method-v2-foundations.md`; positioning vs. concurrent work: `docs/related/animatrix.md`.
 
 ## Evaluation
 
@@ -20,7 +22,7 @@ The keyframe latents are clamped clean during noising and excluded from the loss
 
 ## Dataset
 
-A curated Sakugabooru corpus (~11.9k clips, 240+ series, 25 technique tags). The scraping and windowing pipeline lives in `tools/`; layout and stats in `docs/dataset.md`. Raw data is not versioned — it lives at `<workspace>/data/sakugabooru/`.
+A Sakugabooru corpus at two scales: the curated v1 set (~11.9k clips) and the full 2025 snapshot + delta scrape (~150k posts / ~2.2T, on track for ~500k curated single-shot clips with Qwen3-VL captions). The Stage-0 pipeline (`tools/`: streaming tar processing, shot splitting, motion profiling, annotation, squash consolidation) is object-quota-lean by design — shots live in per-batch pack tars consolidated into a single `shots.sqsh`. Layout, stats, and the storage tiers: `docs/dataset.md`. Raw data is never versioned or redistributed (release = post IDs + metadata + scripts); it lives at the datasets-area path wired in `configs/paths.env`.
 
 ## Repository layout
 
@@ -42,26 +44,22 @@ A curated Sakugabooru corpus (~11.9k clips, 240+ series, 25 technique tags). The
 # 0. one-time: paths (defaults assume the standard workspace layout; override via env)
 source configs/paths.env
 
-# 1. build metadata CSVs from the raw clips
-sbatch scripts/slurm/build_metadata.sbatch
+# 1. Stage-0 data pipeline (chain with --dependency=afterany:<id>; details in CLAUDE.md)
+KEEP_TAR=1 sbatch scripts/slurm/stream_process.sbatch
+sbatch scripts/slurm/split_shots.sbatch
+sbatch scripts/slurm/profile_motion.sbatch
+sbatch scripts/slurm/annotate.sbatch
+sbatch scripts/slurm/consolidate_squash.sbatch
 
-# 2. GPU-node environment check
-sbatch scripts/slurm/env_smoke_test.sbatch
+# 2. smoke gates on a GPU node
+sbatch scripts/slurm/smoke_memory.sbatch
+sbatch scripts/slurm/smoke_vae_fidelity.sbatch
 
-# 3. untuned-baseline generations on held-out clips
-sbatch scripts/slurm/base_inference_demo.sbatch
+# 3. v2 training stages (config-driven: ct_a -> ct_b -> sft)
+STAGE_CONFIG=configs/ct_a.yaml sbatch scripts/slurm/train_v2.sbatch
 
-# 4. fine-tune the native-animation model (hyperparameters override via env, e.g. NUM_FRAMES=81)
+# 4. v1 baseline arm (legacy, kept for ablations)
 sbatch scripts/slurm/train_native_animation.sbatch
-
-# 5. generate from one keyframe with a trained LoRA
-python -m native_animation.inference.generate \
-  --input-image keyframe.png --prompt "native animation, anime, ..." \
-  --lora-path experiments/checkpoints/native_animation_flowmatch_lora/... --output out.mp4
-
-# 6. evaluate
-python -m native_animation.evaluation.evaluate \
-  --summary-json experiments/demo/base/summary.json --dataset-base-path "$DATA_ROOT"
 ```
 
 ## Testing

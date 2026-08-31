@@ -1,19 +1,20 @@
 # Research Roadmap — CVPR 2027
 
-Status: skeleton. Content to be filled in a dedicated planning session.
-Positioning and adoption plan relative to Tencent AniMatrix (arXiv:2605.03652): see `related/animatrix.md`.
-All experiments run afresh — no prior numbers carry over (predecessor report archived).
-Target: CVPR 2027 submission (~mid-November 2026).
+Target: CVPR 2027 submission (~mid-November 2026). All experiments run afresh — no prior numbers carry over.
+Positioning vs. Tencent AniMatrix (arXiv:2605.03652): see `related/animatrix.md` — cite as concurrent corroboration, never defensively.
+Method spec: `superpowers/specs/2026-08-28-native-fm-v2-design.md`; execution plans in `superpowers/plans/` (each carries a status line).
 
 ## Workstreams
 
-1. **Training scale-up** — multi-epoch schedules, LoRA-rank sweep, full fine-tune feasibility, 81-frame training.
-2. **Ablations** — leave-one-out over the three method components (scheduler shift, motion weighting, delta consistency) plus sensitivity on `shift`, `alpha`, `lambda`.
-3. **Baselines** — untuned Wan2.2-TI2V-5B, Wan2.1-I2V-14B preset, and at least one non-Wan I2V model.
-4. **Evaluation** — freeze a benchmark split under `data/benchmarks/`; add FVD and/or a small user study; calibrate DFS thresholds against labeled clips.
-5. **Paper** — write the CVPR 2027 manuscript from scratch in `paper/` (CVPR author kit); figure pipeline from `experiments/`; fresh related-work pass.
+1. **Stage-0 data** *(in flight)* — full-snapshot streaming extraction → shot packs → motion profiling → Qwen3-VL annotation → `shots.sqsh`. Then: rebuild v2 metadata (tiers S/A/B) and freeze the benchmark split (Plan 1 T11–T12). Delta scrape resumes after its output path is packed (object quota).
+2. **Training** — CT-a (256×448×17, fits 4×80GB, FSDP verified) → CT-b (480×832×49; needs 8×80GB and/or T5+VAE offload + FSDP CPU offload) → SFT (tiers S/A + curriculum) from `configs/{ct_a,ct_b,sft}.yaml`.
+3. **Ablations** — anchor-mode mix, delta_mode (vspace vs off vs legacy), motion-weight α, timestep density (m,s,tail), curriculum on/off; v1 objective as a baseline arm.
+4. **Baselines** — untuned Wan2.2-TI2V-5B; AniSora-V3.2 (external SOTA arm).
+5. **Evaluation + DPO** *(Plan 3, not started)* — JEDi (V-JEPA + poly-MMD), AniSora-948 benchmark protocol, anchor-fidelity + flicker metrics, GT-anchored DPO after SFT; small user study.
+6. **Paper** — CVPR author kit in `paper/`; figure pipeline from `experiments/`; fresh related-work pass.
 
 ## Known environment debts
 
-- `open-clip-torch` is not installed in the `comfy` env (the evaluator needs a CLIP backend).
-- `experiments/` has no per-run directory convention yet; introduce one alongside a config system.
+- `open-clip-torch` not in `comfy` (only the v1 evaluator needs it).
+- `experiments/` per-run directory convention still informal for v2 stages.
+- Optional admin ask: object quota 2M → 5M (softened by pack/squash, still the clean fix).
