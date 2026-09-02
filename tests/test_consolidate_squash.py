@@ -1,4 +1,4 @@
-"""Squash consolidation: pack tars -> single shots.sqsh, object-count endgame."""
+"""Squash consolidation: pack tars -> fresh per-run images, object-count endgame."""
 import json
 import shutil
 import subprocess
@@ -40,8 +40,13 @@ def _run(shots_dir: Path, staging: Path, batch: int = 100) -> subprocess.Complet
         capture_output=True, text=True, check=False)
 
 
+def _listing(sqsh: Path) -> str:
+    return subprocess.run(["unsquashfs", "-l", str(sqsh)],
+                          capture_output=True, text=True, check=True).stdout
+
+
 @needs_squashfs
-def test_consolidate_creates_sqsh_and_removes_packs(tmp_path):
+def test_consolidate_creates_image_and_removes_packs(tmp_path):
     shots = tmp_path / "shots"
     _make_pack(shots / "packs", "0001", "series_a", ["1001_00.mp4"], tmp_path)
     _make_pack(shots / "packs", "0002", "series_b", ["2001_00.mp4", "2001_01.mp4"], tmp_path)
@@ -49,44 +54,61 @@ def test_consolidate_creates_sqsh_and_removes_packs(tmp_path):
     result = _run(shots, tmp_path / "staging")
     assert result.returncode == 0, result.stderr
 
-    sqsh = shots / "shots.sqsh"
+    sqsh = shots / "shots_0000.sqsh"
     assert sqsh.exists()
-    listing = subprocess.run(["unsquashfs", "-l", str(sqsh)],
-                             capture_output=True, text=True, check=True).stdout
+    listing = _listing(sqsh)
     assert "series_a/1001_00.mp4" in listing
     assert "series_b/2001_01.mp4" in listing
     # consolidated packs are deleted (the object-count win) and state records them
     assert not (shots / "packs" / "shots_t0001.tar").exists()
     state = json.loads((shots / "_state_squash.json").read_text())
     assert set(state["done_packs"]) == {"shots_t0001.tar", "shots_t0002.tar"}
+    assert state["images"] == ["shots_0000.sqsh"]
 
 
 @needs_squashfs
-def test_consolidate_appends_and_skips_done(tmp_path):
+def test_second_wave_gets_fresh_image_even_with_colliding_series(tmp_path):
+    """Regression: mksquashfs append renames colliding top-level dirs to
+    <name>_1 instead of merging — waves must land in fresh images."""
     shots = tmp_path / "shots"
     _make_pack(shots / "packs", "0001", "series_a", ["1001_00.mp4"], tmp_path)
     assert _run(shots, tmp_path / "s1").returncode == 0
 
-    # second wave: one new pack; rerun must append without disturbing wave 1
-    _make_pack(shots / "packs", "0003", "series_c", ["3001_00.mp4"], tmp_path)
+    # second wave REUSES series_a — the exact collision that corrupted appends
+    _make_pack(shots / "packs", "0003", "series_a", ["3001_00.mp4"], tmp_path)
     result = _run(shots, tmp_path / "s2")
     assert result.returncode == 0, result.stderr
-    listing = subprocess.run(["unsquashfs", "-l", str(shots / "shots.sqsh")],
-                             capture_output=True, text=True, check=True).stdout
-    assert "series_a/1001_00.mp4" in listing and "series_c/3001_00.mp4" in listing
+
+    first, second = shots / "shots_0000.sqsh", shots / "shots_0001.sqsh"
+    assert "series_a/1001_00.mp4" in _listing(first)
+    listing2 = _listing(second)
+    assert "series_a/3001_00.mp4" in listing2
+    assert "series_a_1" not in listing2
     state = json.loads((shots / "_state_squash.json").read_text())
+    assert state["images"] == ["shots_0000.sqsh", "shots_0001.sqsh"]
     assert len(state["done_packs"]) == 2
 
 
-def test_materialize_shot_extra_roots(tmp_path):
-    """Reader finds shots under a mounted-sqsh root passed as extra root."""
+def test_materialize_shot_multiple_extra_roots(tmp_path):
+    """Reader resolves across several mounted-image roots in order."""
     shots = tmp_path / "shots"
     shots.mkdir()
-    mount = tmp_path / "mnt"  # stands in for the squashfuse mountpoint
-    (mount / "series_a").mkdir(parents=True)
-    (mount / "series_a" / "1001_00.mp4").write_bytes(b"squashed")
+    mnt0, mnt1 = tmp_path / "m0", tmp_path / "m1"  # two squashfuse mountpoints
+    (mnt0 / "series_a").mkdir(parents=True)
+    (mnt0 / "series_a" / "1001_00.mp4").write_bytes(b"wave0")
+    (mnt1 / "series_a").mkdir(parents=True)
+    (mnt1 / "series_a" / "3001_00.mp4").write_bytes(b"wave1")
 
-    rec = {"video": "series_a/1001_00.mp4", "pack": "packs/shots_t0001.tar"}
-    local, is_temp = materialize_shot(rec, shots, tmp_path / "tmp", extra_roots=(mount,))
-    assert local is not None and local.read_bytes() == b"squashed"
+    rec = {"video": "series_a/3001_00.mp4", "pack": "packs/gone.tar"}
+    local, is_temp = materialize_shot(rec, shots, tmp_path / "tmp",
+                                      extra_roots=(mnt0, mnt1))
+    assert local is not None and local.read_bytes() == b"wave1"
     assert not is_temp
+
+
+def test_materialize_shot_missing_pack_returns_none(tmp_path):
+    shots = tmp_path / "shots"
+    (shots / "packs").mkdir(parents=True)
+    rec = {"video": "series_a/9_00.mp4", "pack": "packs/shots_t9.tar"}
+    local, is_temp = materialize_shot(rec, shots, tmp_path / "tmp")
+    assert local is None and not is_temp

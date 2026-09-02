@@ -30,7 +30,13 @@ def materialize_shot(record: dict, shots_dir: Path, tmp_dir: Path,
         return None, False
     tmp_dir.mkdir(parents=True, exist_ok=True)
     out = tmp_dir / Path(record["video"]).name
-    with tarfile.open(pack_path) as pack:
+    try:
+        pack_handle = tarfile.open(pack_path)
+    except FileNotFoundError:
+        # pack consolidated away between exists() and open (should not happen
+        # now that squash never overlaps readers — belt and braces)
+        return None, False
+    with pack_handle as pack:
         for name in (record["video"], f"./{record['video']}"):
             try:
                 member = pack.getmember(name)

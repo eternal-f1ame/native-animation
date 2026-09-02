@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Consolidate per-batch shot pack tars into a single shots.sqsh.
+"""Consolidate per-batch shot pack tars into squashfs images.
 
-The object-count endgame: N pack tars -> 1 squashfs image (mksquashfs appends
-into an existing image, so this runs incrementally as waves of packs land).
-Single-writer by design — run as one SLURM job, never an array. Each batch:
-extract pack tars to node-local staging, mksquashfs-append staging into
-shots.sqsh, record the packs in _state_squash.json, delete them. Packs are
-only deleted after their content is confirmed inside the image, so a killed
-run never loses data — rerunning resumes from the state file.
+The object-count endgame: N pack tars -> a handful of squashfs images.
+Each batch builds a FRESH image shots_<serial>.sqsh (mksquashfs append renames
+colliding top-level series dirs to <name>_1 instead of merging — never append).
+Readers mount every image (scripts/slurm/lib/mount_shots.sh) and resolve
+series/file against each mount root. Single-writer by design — one SLURM job,
+never an array, and NEVER concurrent with pack readers (profile/annotate):
+consolidated packs are deleted, which yanks them from under a running reader.
+Packs are only deleted after their content is verified inside the image, so a
+killed run never loses data — rerunning resumes from the state file.
 """
 from __future__ import annotations
 
@@ -32,13 +34,11 @@ def save_state(state_path: Path, state: dict) -> None:
     tmp.replace(state_path)
 
 
-def mksquashfs_append(staging: Path, sqsh: Path) -> None:
+def mksquashfs_fresh(staging: Path, sqsh: Path) -> None:
     # -no-compression: members are already-compressed mp4s; squashfs gzip over
-    # ~300G would burn hours of CPU for ~zero size gain.
+    # ~500G would burn hours of CPU for ~zero size gain.
     cmd = ["mksquashfs", str(staging), str(sqsh),
            "-no-progress", "-processors", "4", "-no-compression", "-noappend"]
-    if sqsh.exists():
-        cmd.remove("-noappend")  # append mode: merge staging into existing image
     subprocess.run(cmd, check=True, capture_output=True, text=True)
 
 
@@ -60,9 +60,9 @@ def main() -> None:
     args = parser.parse_args()
 
     packs_dir = args.shots_dir / "packs"
-    sqsh = args.shots_dir / "shots.sqsh"
     state_path = args.shots_dir / "_state_squash.json"
     state = load_state(state_path)
+    state.setdefault("images", [])
     done = set(state["done_packs"])
 
     pending = sorted(p for p in packs_dir.glob("shots_*.tar") if p.name not in done) \
@@ -84,12 +84,15 @@ def main() -> None:
                 names = [m.name.lstrip("./") for m in handle.getmembers() if m.isfile()]
             if names:
                 samples.append(names[-1])
-        mksquashfs_append(staging, sqsh)
+        serial = max((int(n[6:10]) for n in state["images"]), default=-1) + 1
+        sqsh = args.shots_dir / f"shots_{serial:04d}.sqsh"
+        mksquashfs_fresh(staging, sqsh)
         verify_members(sqsh, samples)
         for pack in batch:
             pack.unlink()
             done.add(pack.name)
         state["done_packs"] = sorted(done)
+        state["images"].append(sqsh.name)
         save_state(state_path, state)
         consolidated += len(batch)
         print(f"consolidated {consolidated}/{len(pending)} packs into {sqsh.name}", flush=True)
