@@ -72,7 +72,14 @@ def main() -> None:
     done = set()
     if out_path.exists():
         with out_path.open() as handle:
-            done = {json.loads(line)["shot_id"] for line in handle if line.strip()}
+            done = set()
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    done.add(json.loads(line)["shot_id"])
+                except json.JSONDecodeError:
+                    continue  # truncated tail from a hard kill; shot re-annotates
 
     if args.backend == "vllm":
         from vllm import LLM, SamplingParams
